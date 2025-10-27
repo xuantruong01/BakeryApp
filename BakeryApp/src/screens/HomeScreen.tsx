@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   categoryCard: {
-    alignItems: "center",
+    alignItems: "center",   
     backgroundColor: "#fff",
     borderRadius: 10,
     padding: 8,
