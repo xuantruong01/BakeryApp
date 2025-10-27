@@ -11,39 +11,48 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../services/firebaseConfig";
+import { useNavigation, useRoute } from "@react-navigation/native";
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const route = useRoute();
+  
 
   const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert("Lỗi", "Vui lòng nhập đầy đủ thông tin!");
-      return;
+  if (!email.trim() || !password.trim()) {
+    Alert.alert("Lỗi", "Vui lòng nhập đầy đủ thông tin!");
+    return;
+  }
+
+  setLoading(true);
+  try {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+
+    await AsyncStorage.setItem("user", JSON.stringify({ uid: user.uid, email: user.email }));
+
+    const redirectTo = route.params?.redirectTo || "MainTabs";
+
+    if (redirectTo === "Cart") {
+      navigation.navigate("MainTabs", { screen: "Cart" });
+    } else {
+      navigation.navigate(redirectTo);
     }
 
-    setLoading(true);
-    try {
-      // ✅ Đăng nhập qua Firebase
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+    Alert.alert("Thành công", "Đăng nhập thành công!");
+  } catch (error) {
+    console.error("Lỗi đăng nhập:", error.message);
+    Alert.alert("Đăng nhập thất bại", "Sai Gmail hoặc mật khẩu!");
+  } finally {
+    setLoading(false);
+  }
+};
 
-      // ✅ Lưu thông tin đăng nhập vào AsyncStorage
-      await AsyncStorage.setItem("user", JSON.stringify({ email: user.email }));
 
-      Alert.alert("Thành công", "Đăng nhập thành công!");
-      navigation.replace("Tabs"); // Quay về TabNavigator
-    } catch (error) {
-      // ❌ Thông báo lỗi Firebase
-      console.error("Lỗi đăng nhập:", error.message);
-      Alert.alert("Đăng nhập thất bại", "Sai Gmail hoặc mật khẩu!");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleBackHome = () => {
+  const handleBackHome = async () => {
+    await AsyncStorage.removeItem("user");
     navigation.navigate("MainTabs");
   };
 

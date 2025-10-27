@@ -32,7 +32,7 @@ const AccountScreen = () => {
   // Xử lý đăng xuất
   const handleLogout = async () => {
     await AsyncStorage.removeItem("user");
-    navigation.navigate("Login"); // Quay lại trang Login sau khi đăng xuất
+    navigation.navigate("Login"); // Quay lại trang chính sau khi đăng xuất
   };
 
   // Hiển thị loading khi đang kiểm tra login
