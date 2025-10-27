@@ -35,11 +35,15 @@ const LoginScreen = ({ navigation }) => {
 
     const redirectTo = route.params?.redirectTo || "MainTabs";
 
-    if (redirectTo === "Cart") {
-      navigation.navigate("MainTabs", { screen: "Cart" });
-    } else {
-      navigation.navigate(redirectTo);
-    }
+// 🧭 Điều hướng linh hoạt theo nơi gọi đến
+if (redirectTo === "Cart" || redirectTo === "Account") {
+  navigation.navigate("MainTabs", { screen: redirectTo });
+} else if (redirectTo === "MainTabs") {
+  navigation.navigate("MainTabs");
+} else {
+  navigation.navigate(redirectTo);
+}
+
 
     Alert.alert("Thành công", "Đăng nhập thành công!");
   } catch (error) {

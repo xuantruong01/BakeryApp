@@ -1,10 +1,9 @@
-
-
 import React from "react";
 import { createStackNavigator } from "@react-navigation/stack";
 import TabNavigator from "./TabNavigator";
 import LoginScreen from "../screens/LoginScreen";
 import SignUpScreen from "../screens/SignUpScreens"
+import ProductDetailScreen from "../screens/ProductDetailScreen";
 
 const Stack = createStackNavigator();
 
@@ -17,7 +16,7 @@ export default function AppNavigator() {
       <Stack.Screen
         name="ProductDetail"
         component={ProductDetailScreen}
-        options={{ headerShown: true, title: "Chi tiết sản phẩm" }}
+        options={{ headerShown: false, title: "Chi tiết sản phẩm" }}
       />
     </Stack.Navigator>
   );
