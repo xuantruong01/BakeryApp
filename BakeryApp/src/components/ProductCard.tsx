@@ -15,25 +15,12 @@ type Props = {
 const ProductCard = ({ item, onPress }: Props) => {
   return (
     <TouchableOpacity style={styles.card} activeOpacity={0.85} onPress={onPress}>
-      {/* Hình ảnh bên trái */}
-      <Image
-        source={{ uri: item.imageUrl || "https://via.placeholder.com/100" }}
-        style={styles.image}
-      />
-
-      {/* Nội dung bên phải */}
-      <View style={styles.info}>
-        <Text style={styles.name} numberOfLines={1}>
-          {item.name}
-        </Text>
-        {item.description ? (
-          <Text style={styles.desc} numberOfLines={2}>
-            {item.description}
-          </Text>
-        ) : null}
-        <Text style={styles.price}>{item.price?.toLocaleString()} VNĐ</Text>
-      </View>
-    </TouchableOpacity>
+  <Image source={{ uri: item.imageUrl || "https://via.placeholder.com/100" }} style={styles.image} />
+  <View style={styles.info}>
+    <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
+    <Text style={styles.price}>{item.price?.toLocaleString()} VNĐ</Text>
+  </View>
+</TouchableOpacity>
   );
 };
 
