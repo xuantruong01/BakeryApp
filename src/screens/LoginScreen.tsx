@@ -20,29 +20,10 @@ const LoginScreen = ({ navigation }) => {
   const route = useRoute();
 
   const handleLogin = async () => {
-  if (!email.trim() || !password.trim()) {
-    Alert.alert("Lỗi", "Vui lòng nhập đầy đủ thông tin!");
-    return;
-  }
-
-  setLoading(true);
-  try {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
-
-    await AsyncStorage.setItem("user", JSON.stringify({ uid: user.uid, email: user.email }));
-
-    const redirectTo = route.params?.redirectTo || "MainTabs";
-
-// 🧭 Điều hướng linh hoạt theo nơi gọi đến
-if (redirectTo === "Cart" || redirectTo === "Account") {
-  navigation.navigate("MainTabs", { screen: redirectTo });
-} else if (redirectTo === "MainTabs") {
-  navigation.navigate("MainTabs");
-} else {
-  navigation.navigate(redirectTo);
-}
-
+    if (!email.trim() || !password.trim()) {
+      Alert.alert("Lỗi", "Vui lòng nhập đầy đủ thông tin!");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -60,7 +41,7 @@ if (redirectTo === "Cart" || redirectTo === "Account") {
 
       const redirectTo = route.params?.redirectTo || "MainTabs";
 
-      // 🧭 Điều hướng linh hoạt theo nơi gọi đến
+      // 🧭 Điều hướng linh hoạt
       if (redirectTo === "Cart" || redirectTo === "Account") {
         navigation.navigate("MainTabs", { screen: redirectTo });
       } else if (redirectTo === "MainTabs") {
@@ -69,9 +50,9 @@ if (redirectTo === "Cart" || redirectTo === "Account") {
         navigation.navigate(redirectTo);
       }
 
-      Alert.alert("Thành công", "Đăng nhập thành công!");
-    } catch (error) {
-      console.error("Lỗi đăng nhập:", error.message);
+      Alert.alert("✅ Thành công", "Đăng nhập thành công!");
+    } catch (error: any) {
+      console.error("❌ Lỗi đăng nhập:", error.message);
       Alert.alert("Đăng nhập thất bại", "Sai Gmail hoặc mật khẩu!");
     } finally {
       setLoading(false);
@@ -131,7 +112,7 @@ if (redirectTo === "Cart" || redirectTo === "Account") {
   );
 };
 
-export default LoginScreen
+export default LoginScreen;
 
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: "center", alignItems: "center" },
@@ -176,4 +157,4 @@ const styles = StyleSheet.create({
     color: "#924900",
     fontWeight: "500",
   },
-});}
+});
