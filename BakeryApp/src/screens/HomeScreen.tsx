@@ -11,18 +11,21 @@ import {
   TouchableOpacity,
   Dimensions,
 } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../services/firebaseConfig";
 import ProductCard from "../components/ProductCard";
 import BannerCarousel from "../components/BannerCarousel";
 
 const { width } = Dimensions.get("window");
-const ITEM_SIZE = (width - 60) / 4; // 4 cột / hàng
-const MAX_ITEMS_PER_PAGE = 8; // 2 hàng × 4 cột
+const ITEM_SIZE = (width - 60) / 4;
+const MAX_ITEMS_PER_PAGE = 8;
 
 type Category = { categoryId: string; name: string; imageUrl?: string };
 
 const HomeScreen = () => {
+  const navigation = useNavigation<any>(); // ✅ quan trọng
+
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [search, setSearch] = useState("");
@@ -71,8 +74,6 @@ const HomeScreen = () => {
   }
 
   const hotProducts = products.slice(0, 5);
-
-  // 👉 Chia categories thành các "trang", mỗi trang 8 item
   const pages = [];
   for (let i = 0; i < categories.length; i += MAX_ITEMS_PER_PAGE) {
     pages.push(categories.slice(i, i + MAX_ITEMS_PER_PAGE));
@@ -80,7 +81,7 @@ const HomeScreen = () => {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Thanh tìm kiếm */}
+      {/* Search */}
       <View style={styles.searchContainer}>
         <TextInput
           placeholder="🔍 Tìm bánh bạn yêu thích..."
@@ -94,14 +95,12 @@ const HomeScreen = () => {
       {/* Banner */}
       <BannerCarousel data={hotProducts} onPressItem={() => {}} />
 
-      {/* Danh mục có thể lướt */}
+      {/* Categories */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>🎂 Danh mục nổi bật</Text>
-        
-        {/* ✅ FlatList ngang, mỗi “trang” chứa 8 item */}
         <FlatList
           data={pages}
-          keyExtractor={(_, index) => `page-${index}`} // không dùng numColumns
+          keyExtractor={(_, index) => `page-${index}`}
           horizontal
           showsHorizontalScrollIndicator={false}
           pagingEnabled
@@ -130,23 +129,26 @@ const HomeScreen = () => {
             </View>
           )}
         />
-      
-        {/* Thanh tiến độ nhỏ, căn giữa */}
-        <View style={styles.progressContainer}>
-          <View style={styles.progressTrack}>
-            <View style={styles.progressThumb} />
-          </View>
-        </View>
       </View>
 
-
-      {/* Món hot */}
+      {/* Hot Products */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>🔥 Món hot trong tuần</Text>
         <FlatList
           data={hotProducts}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <ProductCard item={item} />}
+          renderItem={({ item }) => (
+            <ProductCard
+              item={item}
+              onPress={() => {
+                console.log("Pressed:", item.id);
+                (
+                  navigation.getParent("rootStack") ??
+                  navigation.getParent()?.getParent()
+                )?.navigate("ProductDetail", { product: item });
+              }}
+            />
+          )}
           scrollEnabled={false}
         />
       </View>
@@ -159,7 +161,6 @@ export default HomeScreen;
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff", paddingTop: 40 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-
   searchContainer: { marginHorizontal: 20, marginBottom: 10 },
   searchInput: {
     backgroundColor: "#f5f5f5",
@@ -170,7 +171,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#eee",
   },
-
   section: { marginTop: 15 },
   sectionTitle: {
     fontSize: 20,
@@ -179,8 +179,6 @@ const styles = StyleSheet.create({
     color: "#E58E26",
     marginHorizontal: 20,
   },
-
-  // Mỗi trang gồm 8 item (2 hàng x 4 cột)
   categoryPage: {
     width: width,
     flexDirection: "row",
@@ -204,25 +202,5 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     textAlign: "center",
     color: "#333",
-  },
-
-  // Progress bar nhỏ gọn, căn giữa
-  progressContainer: {
-    alignItems: "center",
-    marginTop: -5,
-    marginBottom: 5,
-  },
-  progressTrack: {
-    width: "25%",
-    height: 3,
-    backgroundColor: "#eee",
-    borderRadius: 999,
-    overflow: "hidden",
-  },
-  progressThumb: {
-    width: "50%",
-    height: 3,
-    backgroundColor: "#E58E26",
-    borderRadius: 999,
   },
 });
