@@ -5,18 +5,26 @@ import {
   FlatList,
   StyleSheet,
   ActivityIndicator,
-  Image,
   TextInput,
   ScrollView,
+  Image,
   TouchableOpacity,
+  Dimensions,
 } from "react-native";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../services/firebaseConfig";
 import ProductCard from "../components/ProductCard";
+import BannerCarousel from "../components/BannerCarousel";
+
+const { width } = Dimensions.get("window");
+const ITEM_SIZE = (width - 60) / 4; // 4 cột / hàng
+const MAX_ITEMS_PER_PAGE = 8; // 2 hàng × 4 cột
+
+type Category = { categoryId: string; name: string; imageUrl?: string };
 
 const HomeScreen = () => {
   const [products, setProducts] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -32,20 +40,24 @@ const HomeScreen = () => {
           id: doc.id,
           ...doc.data(),
         }));
-        const categoryData = categorySnap.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+
+        const categoryData: Category[] = categorySnap.docs.map((doc) => {
+          const d: any = doc.data();
+          return {
+            categoryId: d.categoryId ?? doc.id,
+            name: d.name,
+            imageUrl: d.imageUrl,
+          };
+        });
 
         setProducts(productData);
         setCategories(categoryData);
-      } catch (error) {
-        console.error("❌ Lỗi khi tải dữ liệu:", error);
+      } catch (e) {
+        console.error("❌ Lỗi khi tải dữ liệu:", e);
       } finally {
         setLoading(false);
       }
     };
-
     fetchData();
   }, []);
 
@@ -58,8 +70,13 @@ const HomeScreen = () => {
     );
   }
 
-  // Lọc 5 sản phẩm đầu tiên là "hot"
   const hotProducts = products.slice(0, 5);
+
+  // 👉 Chia categories thành các "trang", mỗi trang 8 item
+  const pages = [];
+  for (let i = 0; i < categories.length; i += MAX_ITEMS_PER_PAGE) {
+    pages.push(categories.slice(i, i + MAX_ITEMS_PER_PAGE));
+  }
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -74,29 +91,56 @@ const HomeScreen = () => {
         />
       </View>
 
-      {/* Danh mục categories */}
+      {/* Banner */}
+      <BannerCarousel data={hotProducts} onPressItem={() => {}} />
+
+      {/* Danh mục có thể lướt */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>🎂 Danh mục nổi bật</Text>
-        <ScrollView
+        
+        {/* ✅ FlatList ngang, mỗi “trang” chứa 8 item */}
+        <FlatList
+          data={pages}
+          keyExtractor={(_, index) => `page-${index}`} // không dùng numColumns
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoryScroll}
-        >
-          {categories.map((cat) => (
-            <TouchableOpacity key={cat.id} style={styles.categoryCard}>
-              {cat.image && (
-                <Image
-                  source={{ uri: cat.image }}
-                  style={styles.categoryImage}
-                />
-              )}
-              <Text style={styles.categoryName}>{cat.name}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+          pagingEnabled
+          snapToInterval={width}
+          decelerationRate="fast"
+          renderItem={({ item }) => (
+            <View style={styles.categoryPage}>
+              {item.map((cat) => (
+                <TouchableOpacity
+                  key={cat.categoryId}
+                  activeOpacity={0.8}
+                  style={styles.categoryItem}
+                  onPress={() => {}}
+                >
+                  <Image
+                    source={{
+                      uri: cat.imageUrl || "https://via.placeholder.com/100",
+                    }}
+                    style={styles.categoryImage}
+                  />
+                  <Text style={styles.categoryName} numberOfLines={1}>
+                    {cat.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        />
+      
+        {/* Thanh tiến độ nhỏ, căn giữa */}
+        <View style={styles.progressContainer}>
+          <View style={styles.progressTrack}>
+            <View style={styles.progressThumb} />
+          </View>
+        </View>
       </View>
 
-      {/* Sản phẩm hot */}
+
+      {/* Món hot */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>🔥 Món hot trong tuần</Text>
         <FlatList
@@ -113,18 +157,10 @@ const HomeScreen = () => {
 export default HomeScreen;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    paddingTop: 40,
-  },
+  container: { flex: 1, backgroundColor: "#fff", paddingTop: 40 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
 
-  /* Thanh tìm kiếm */
-  searchContainer: {
-    marginHorizontal: 20,
-    marginBottom: 10,
-  },
+  searchContainer: { marginHorizontal: 20, marginBottom: 10 },
   searchInput: {
     backgroundColor: "#f5f5f5",
     borderRadius: 10,
@@ -135,41 +171,58 @@ const styles = StyleSheet.create({
     borderColor: "#eee",
   },
 
-  /* Section */
-  section: {
-    marginTop: 15,
-    marginHorizontal: 20,
-  },
+  section: { marginTop: 15 },
   sectionTitle: {
     fontSize: 20,
     fontWeight: "700",
     marginBottom: 10,
     color: "#E58E26",
+    marginHorizontal: 20,
   },
 
-  /* Category scroll */
-  categoryScroll: {
-    gap: 12,
+  // Mỗi trang gồm 8 item (2 hàng x 4 cột)
+  categoryPage: {
+    width: width,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
   },
-  categoryCard: {
+  categoryItem: {
+    width: ITEM_SIZE,
     alignItems: "center",
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    padding: 8,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    shadowOffset: { width: 0, height: 2 },
+    marginBottom: 15,
   },
   categoryImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 10,
-    marginBottom: 5,
+    width: ITEM_SIZE - 10,
+    height: ITEM_SIZE - 10,
+    borderRadius: 12,
+    marginBottom: 6,
   },
   categoryName: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "600",
+    textAlign: "center",
+    color: "#333",
+  },
+
+  // Progress bar nhỏ gọn, căn giữa
+  progressContainer: {
+    alignItems: "center",
+    marginTop: -5,
+    marginBottom: 5,
+  },
+  progressTrack: {
+    width: "25%",
+    height: 3,
+    backgroundColor: "#eee",
+    borderRadius: 999,
+    overflow: "hidden",
+  },
+  progressThumb: {
+    width: "50%",
+    height: 3,
+    backgroundColor: "#E58E26",
+    borderRadius: 999,
   },
 });
