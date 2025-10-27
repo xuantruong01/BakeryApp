@@ -26,14 +26,18 @@ const LoginScreen = ({ navigation }) => {
     setLoading(true);
     try {
       // ✅ Đăng nhập qua Firebase
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
       const user = userCredential.user;
 
       // ✅ Lưu thông tin đăng nhập vào AsyncStorage
       await AsyncStorage.setItem("user", JSON.stringify({ email: user.email }));
 
       Alert.alert("Thành công", "Đăng nhập thành công!");
-      navigation.replace("Tabs"); // Quay về TabNavigator
+      navigation.replace("MainTabs"); // Quay về TabNavigator
     } catch (error) {
       // ❌ Thông báo lỗi Firebase
       console.error("Lỗi đăng nhập:", error.message);

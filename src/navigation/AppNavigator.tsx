@@ -16,7 +16,7 @@ export default function AppNavigator() {
       <Stack.Screen
         name="ProductDetail"
         component={ProductDetailScreen}
-        options={{ headerShown: true, title: "Chi tiết sản phẩm" }}
+        options={{ headerShown: false, title: "Chi tiết sản phẩm" }}
       />
     </Stack.Navigator>
   );
