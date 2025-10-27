@@ -1,0 +1,143 @@
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Button,
+  StyleSheet,
+  Alert,
+} from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../services/firebaseConfig";
+
+const LoginScreen = ({ navigation }) => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async () => {
+    if (!email.trim() || !password.trim()) {
+      Alert.alert("Lỗi", "Vui lòng nhập đầy đủ thông tin!");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // ✅ Đăng nhập qua Firebase
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // ✅ Lưu thông tin đăng nhập vào AsyncStorage
+      await AsyncStorage.setItem("user", JSON.stringify({ email: user.email }));
+
+      Alert.alert("Thành công", "Đăng nhập thành công!");
+      navigation.replace("Tabs"); // Quay về TabNavigator
+    } catch (error) {
+      // ❌ Thông báo lỗi Firebase
+      console.error("Lỗi đăng nhập:", error.message);
+      Alert.alert("Đăng nhập thất bại", "Sai Gmail hoặc mật khẩu!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBackHome = () => {
+    navigation.navigate("MainTabs");
+  };
+
+  return (
+    <View style={styles.container}>
+      <TouchableOpacity style={styles.backButton} onPress={handleBackHome}>
+        <Text style={styles.backText}>⬅ Quay lại Trang chủ</Text>
+      </TouchableOpacity>
+
+      <Text style={styles.title}>Đăng nhập</Text>
+
+      <TextInput
+        style={styles.input}
+        placeholder="Nhập Gmail"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+        autoCapitalize="none"
+      />
+
+      <TextInput
+        style={styles.input}
+        placeholder="Nhập mật khẩu"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+      />
+
+      <TouchableOpacity onPress={() => alert("Tính năng đang phát triển!")}>
+        <Text style={styles.forgotText}>Quên mật khẩu?</Text>
+      </TouchableOpacity>
+
+      <View style={{ width: "80%", marginTop: 10 }}>
+        <Button
+          title={loading ? "Đang đăng nhập..." : "Đăng nhập"}
+          onPress={handleLogin}
+          color="#924900"
+          disabled={loading}
+        />
+      </View>
+
+      <View style={styles.footer}>
+        <Text>Bạn chưa có tài khoản? </Text>
+        <TouchableOpacity onPress={() => navigation.navigate("SignUp")}>
+          <Text style={styles.signupText}>Đăng ký</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+
+export default LoginScreen;
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: "center", alignItems: "center" },
+  title: {
+    fontSize: 26,
+    fontWeight: "bold",
+    marginBottom: 30,
+    color: "#924900",
+  },
+  input: {
+    width: "80%",
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 15,
+    fontSize: 16,
+  },
+  forgotText: {
+    alignSelf: "flex-end",
+    marginRight: "10%",
+    fontSize: 14,
+    color: "#924900",
+    marginBottom: 10,
+  },
+  footer: {
+    flexDirection: "row",
+    marginTop: 20,
+    alignItems: "center",
+  },
+  signupText: {
+    color: "#924900",
+    fontWeight: "bold",
+  },
+  backButton: {
+    position: "absolute",
+    top: 50,
+    left: 20,
+  },
+  backText: {
+    fontSize: 16,
+    color: "#924900",
+    fontWeight: "500",
+  },
+});
