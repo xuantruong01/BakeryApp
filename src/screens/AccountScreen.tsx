@@ -72,14 +72,18 @@ const AccountScreen = () => {
 
           <TouchableOpacity
             style={styles.loginButton}
-            onPress={() => navigation.navigate("Login", { redirectTo: "Account" })}
+            onPress={() =>
+              navigation.navigate("Login", { redirectTo: "Account" })
+            }
           >
             <Text style={styles.buttonText}>Đăng nhập</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.signupButton}
-            onPress={() => navigation.navigate("SignUp", { redirectTo: "Account" })}
+            onPress={() =>
+              navigation.navigate("SignUp", { redirectTo: "Account" })
+            }
           >
             <Text style={styles.buttonText}>Đăng ký</Text>
           </TouchableOpacity>

@@ -15,7 +15,6 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "../services/firebaseConfig";
 
-
 const SignUpScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
@@ -26,7 +25,13 @@ const SignUpScreen = ({ navigation }) => {
 
   const handleSignUp = async () => {
     // Kiểm tra rỗng
-    if (!email.trim() || !fullName.trim() || !phone.trim() || !password.trim() || !rePassword.trim()) {
+    if (
+      !email.trim() ||
+      !fullName.trim() ||
+      !phone.trim() ||
+      !password.trim() ||
+      !rePassword.trim()
+    ) {
       ToastAndroid.show("Vui lòng nhập đầy đủ thông tin!", ToastAndroid.SHORT);
       return;
     }
@@ -47,14 +52,18 @@ const SignUpScreen = ({ navigation }) => {
     setLoading(true);
     try {
       // Đăng ký Firebase
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
       const user = userCredential.user;
       await setDoc(doc(db, "users", user.uid), {
-    email: email,
-    fullname: fullName,
-    phoneNumber: phone,
-    createdAt: new Date(),
-  });
+        email: email,
+        fullname: fullName,
+        phoneNumber: phone,
+        createdAt: new Date(),
+      });
 
       ToastAndroid.show("Đăng ký thành công!", ToastAndroid.SHORT);
       navigation.replace("Login"); // Chuyển sang màn hình đăng nhập
@@ -148,7 +157,12 @@ const SignUpScreen = ({ navigation }) => {
 export default SignUpScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 20 },
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
   title: {
     fontSize: 26,
     fontWeight: "bold",
