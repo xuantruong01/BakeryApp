@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Button, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Button,
+  ActivityIndicator,
+} from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 
@@ -48,7 +54,9 @@ const AccountScreen = () => {
     <View style={styles.container}>
       {user ? (
         <>
-          <Text style={styles.text}>👤 Xin chào, {user.username || user.email}!</Text>
+          <Text style={styles.text}>
+            👤 Xin chào, {user.username || user.email}!
+          </Text>
           <Button title="Đăng xuất" onPress={handleLogout} color="#924900" />
         </>
       ) : (

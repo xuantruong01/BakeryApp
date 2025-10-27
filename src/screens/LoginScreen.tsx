@@ -11,11 +11,13 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../services/firebaseConfig";
+import { useNavigation, useRoute } from "@react-navigation/native";
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const route = useRoute();
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
@@ -25,7 +27,6 @@ const LoginScreen = ({ navigation }) => {
 
     setLoading(true);
     try {
-      // ✅ Đăng nhập qua Firebase
       const userCredential = await signInWithEmailAndPassword(
         auth,
         email,
@@ -33,13 +34,24 @@ const LoginScreen = ({ navigation }) => {
       );
       const user = userCredential.user;
 
-      // ✅ Lưu thông tin đăng nhập vào AsyncStorage
-      await AsyncStorage.setItem("user", JSON.stringify({ email: user.email }));
+      await AsyncStorage.setItem(
+        "user",
+        JSON.stringify({ uid: user.uid, email: user.email })
+      );
+
+      const redirectTo = route.params?.redirectTo || "MainTabs";
+
+      // 🧭 Điều hướng linh hoạt theo nơi gọi đến
+      if (redirectTo === "Cart" || redirectTo === "Account") {
+        navigation.navigate("MainTabs", { screen: redirectTo });
+      } else if (redirectTo === "MainTabs") {
+        navigation.navigate("MainTabs");
+      } else {
+        navigation.navigate(redirectTo);
+      }
 
       Alert.alert("Thành công", "Đăng nhập thành công!");
-      navigation.replace("MainTabs"); // Quay về TabNavigator
     } catch (error) {
-      // ❌ Thông báo lỗi Firebase
       console.error("Lỗi đăng nhập:", error.message);
       Alert.alert("Đăng nhập thất bại", "Sai Gmail hoặc mật khẩu!");
     } finally {
@@ -47,7 +59,8 @@ const LoginScreen = ({ navigation }) => {
     }
   };
 
-  const handleBackHome = () => {
+  const handleBackHome = async () => {
+    await AsyncStorage.removeItem("user");
     navigation.navigate("MainTabs");
   };
 
