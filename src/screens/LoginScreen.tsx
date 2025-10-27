@@ -20,10 +20,29 @@ const LoginScreen = ({ navigation }) => {
   const route = useRoute();
 
   const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert("Lỗi", "Vui lòng nhập đầy đủ thông tin!");
-      return;
-    }
+  if (!email.trim() || !password.trim()) {
+    Alert.alert("Lỗi", "Vui lòng nhập đầy đủ thông tin!");
+    return;
+  }
+
+  setLoading(true);
+  try {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+
+    await AsyncStorage.setItem("user", JSON.stringify({ uid: user.uid, email: user.email }));
+
+    const redirectTo = route.params?.redirectTo || "MainTabs";
+
+// 🧭 Điều hướng linh hoạt theo nơi gọi đến
+if (redirectTo === "Cart" || redirectTo === "Account") {
+  navigation.navigate("MainTabs", { screen: redirectTo });
+} else if (redirectTo === "MainTabs") {
+  navigation.navigate("MainTabs");
+} else {
+  navigation.navigate(redirectTo);
+}
+
 
     setLoading(true);
     try {
@@ -112,7 +131,7 @@ const LoginScreen = ({ navigation }) => {
   );
 };
 
-export default LoginScreen;
+export default LoginScreen
 
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: "center", alignItems: "center" },
@@ -157,4 +176,4 @@ const styles = StyleSheet.create({
     color: "#924900",
     fontWeight: "500",
   },
-});
+});}
