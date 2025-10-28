@@ -5,6 +5,9 @@ import LoginScreen from "../screens/LoginScreen";
 import SignUpScreen from "../screens/SignUpScreens";
 import ProductDetailScreen from "../screens/ProductDetailScreen";
 import AddAddressScreen from "../screens/AddressScreen";
+import SearchResultScreen from "../screens/SearchResultScreen";
+import CategoryProductsScreen from "../screens/CategoryProductsScreen";
+
 
 const Stack = createStackNavigator();
 
@@ -23,6 +26,17 @@ export default function AppNavigator() {
         name="AddAddress"
         component={AddAddressScreen}
         options={{ headerShown: false, title: "Thêm địa chỉ giao hàng" }}
+        
+      />
+      <Stack.Screen
+        name="SearchResult"
+        component={SearchResultScreen}
+        options={{ headerShown: false, title: "Kết quả tìm kiếm" }}
+      />
+      <Stack.Screen
+        name="CategoryProducts"
+        component={CategoryProductsScreen}
+        options={{ headerShown: false, title: "Sản phẩm theo danh mục" }}
       />
     </Stack.Navigator>
   );

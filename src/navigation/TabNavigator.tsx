@@ -11,6 +11,8 @@ export default function TabNavigator() {
     <Tab.Navigator screenOptions={{
       headerShown: false,
       tabBarActiveTintColor: "#924900",
+      tabBarHideOnKeyboard: true,
+      lazy: true,
     }}
     
     >
