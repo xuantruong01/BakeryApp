@@ -23,26 +23,30 @@ const SignUpScreen = ({ navigation }) => {
   const [rePassword, setRePassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // State lưu lỗi từng trường
+  const [errors, setErrors] = useState({});
+
+  // Hàm kiểm tra rỗng từng trường khi blur
+  const handleBlur = (field, value) => {
+    if (!value.trim()) {
+      setErrors((prev) => ({ ...prev, [field]: "Không được để trống!" }));
+    } else {
+      setErrors((prev) => ({ ...prev, [field]: null }));
+    }
+  };
+
   const handleSignUp = async () => {
-    // Kiểm tra rỗng
-    if (
-      !email.trim() ||
-      !fullName.trim() ||
-      !phone.trim() ||
-      !password.trim() ||
-      !rePassword.trim()
-    ) {
+    // Kiểm tra lỗi
+    if (!email.trim() || !fullName.trim() || !phone.trim() || !password.trim() || !rePassword.trim()) {
       ToastAndroid.show("Vui lòng nhập đầy đủ thông tin!", ToastAndroid.SHORT);
       return;
     }
 
-    // Kiểm tra mật khẩu khớp
     if (password !== rePassword) {
       ToastAndroid.show("Mật khẩu nhập lại không khớp!", ToastAndroid.SHORT);
       return;
     }
 
-    // Kiểm tra định dạng email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       Alert.alert("Lỗi", "Email không hợp lệ!");
@@ -51,13 +55,9 @@ const SignUpScreen = ({ navigation }) => {
 
     setLoading(true);
     try {
-      // Đăng ký Firebase
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
+
       await setDoc(doc(db, "users", user.uid), {
         email: email,
         fullname: fullName,
@@ -65,8 +65,8 @@ const SignUpScreen = ({ navigation }) => {
         createdAt: new Date(),
       });
 
-      ToastAndroid.show("Đăng ký thành công!", ToastAndroid.SHORT);
-      navigation.replace("Login"); // Chuyển sang màn hình đăng nhập
+      Alert.alert("Đăng ký thành công!");
+      navigation.navigate("Login");
     } catch (error) {
       console.error("Lỗi đăng ký:", error);
       Alert.alert("Đăng ký thất bại", error.message);
@@ -75,66 +75,95 @@ const SignUpScreen = ({ navigation }) => {
     }
   };
 
-  const handleBack = () => {
-    navigation.goBack();
-  };
-
   return (
     <View style={styles.container}>
-      {/* Nút quay lại */}
-      <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
         <Ionicons name="arrow-back" size={24} color="#924900" />
       </TouchableOpacity>
 
       <Text style={styles.title}>Tạo tài khoản mới</Text>
 
-      {/* Ô nhập tên */}
-      <TextInput
-        style={styles.input}
-        placeholder="Nhập họ và tên"
-        value={fullName}
-        onChangeText={setFullName}
-      />
+      {/* Full Name */}
+      <View style={styles.inputWrapper}>
+        <TextInput
+          style={[
+            styles.input,
+            errors.fullName ? styles.inputError : null
+          ]}
+          placeholder="Nhập họ và tên"
+          value={fullName}
+          onChangeText={setFullName}
+          onBlur={() => handleBlur("fullName", fullName)}
+        />
+        {errors.fullName && <Text style={styles.errorText}>{errors.fullName}</Text>}
+      </View>
 
-      {/* Ô nhập email */}
-      <TextInput
-        style={styles.input}
-        placeholder="Nhập Gmail"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
+      {/* Email */}
+      <View style={styles.inputWrapper}>
+        <TextInput
+          style={[
+            styles.input,
+            errors.email ? styles.inputError : null
+          ]}
+          placeholder="Nhập Gmail"
+          value={email}
+          onChangeText={setEmail}
+          onBlur={() => handleBlur("email", email)}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+        {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+      </View>
 
-      {/* Ô nhập số điện thoại */}
-      <TextInput
-        style={styles.input}
-        placeholder="Nhập số điện thoại"
-        value={phone}
-        onChangeText={setPhone}
-        keyboardType="phone-pad"
-      />
+      {/* Phone */}
+      <View style={styles.inputWrapper}>
+        <TextInput
+          style={[
+            styles.input,
+            errors.phone ? styles.inputError : null
+          ]}
+          placeholder="Nhập số điện thoại"
+          value={phone}
+          onChangeText={setPhone}
+          onBlur={() => handleBlur("phone", phone)}
+          keyboardType="phone-pad"
+        />
+        {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
+      </View>
 
-      {/* Ô nhập mật khẩu */}
-      <TextInput
-        style={styles.input}
-        placeholder="Nhập mật khẩu"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
+      {/* Password */}
+      <View style={styles.inputWrapper}>
+        <TextInput
+          style={[
+            styles.input,
+            errors.password ? styles.inputError : null
+          ]}
+          placeholder="Nhập mật khẩu"
+          value={password}
+          onChangeText={setPassword}
+          onBlur={() => handleBlur("password", password)}
+          secureTextEntry
+        />
+        {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
+      </View>
 
-      {/* Ô nhập lại mật khẩu */}
-      <TextInput
-        style={styles.input}
-        placeholder="Nhập lại mật khẩu"
-        value={rePassword}
-        onChangeText={setRePassword}
-        secureTextEntry
-      />
+      {/* Re-Password */}
+      <View style={styles.inputWrapper}>
+        <TextInput
+          style={[
+            styles.input,
+            errors.rePassword ? styles.inputError : null
+          ]}
+          placeholder="Nhập lại mật khẩu"
+          value={rePassword}
+          onChangeText={setRePassword}
+          onBlur={() => handleBlur("rePassword", rePassword)}
+          secureTextEntry
+        />
+        {errors.rePassword && <Text style={styles.errorText}>{errors.rePassword}</Text>}
+      </View>
 
-      {/* Nút đăng ký */}
-      <View style={{ width: "80%", marginTop: 20 }}>
+      <View style={{ width: "80%", marginTop: 15 }}>
         <Button
           title={loading ? "Đang tạo tài khoản..." : "Đăng ký"}
           onPress={handleSignUp}
@@ -143,7 +172,6 @@ const SignUpScreen = ({ navigation }) => {
         />
       </View>
 
-      {/* Chuyển sang đăng nhập */}
       <View style={styles.footer}>
         <Text>Đã có tài khoản? </Text>
         <TouchableOpacity onPress={() => navigation.replace("Login")}>
@@ -169,14 +197,26 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     color: "#924900",
   },
-  input: {
+  inputWrapper: {
     width: "80%",
+    marginBottom: 10,
+  },
+  input: {
+    width: "100%",
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: 10,
     padding: 12,
-    marginBottom: 15,
     fontSize: 16,
+  },
+  inputError: {
+    borderColor: "red",
+  },
+  errorText: {
+    color: "red",
+    fontSize: 13,
+    marginTop: 3,
+    marginLeft: 4,
   },
   footer: {
     flexDirection: "row",
