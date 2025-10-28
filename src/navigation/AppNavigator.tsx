@@ -4,6 +4,7 @@ import TabNavigator from "./TabNavigator";
 import LoginScreen from "../screens/LoginScreen";
 import SignUpScreen from "../screens/SignUpScreens";
 import ProductDetailScreen from "../screens/ProductDetailScreen";
+import AddAddressScreen from "../screens/AddressScreen";
 import SearchResultScreen from "../screens/SearchResultScreen";
 import CategoryProductsScreen from "../screens/CategoryProductsScreen";
 
@@ -20,6 +21,12 @@ export default function AppNavigator() {
         name="ProductDetail"
         component={ProductDetailScreen}
         options={{ headerShown: false, title: "Chi tiết sản phẩm" }}
+      />
+      <Stack.Screen
+        name="AddAddress"
+        component={AddAddressScreen}
+        options={{ headerShown: false, title: "Thêm địa chỉ giao hàng" }}
+        
       />
       <Stack.Screen
         name="SearchResult"

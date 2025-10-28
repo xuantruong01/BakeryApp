@@ -12,6 +12,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../services/firebaseConfig";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
@@ -67,7 +68,7 @@ const LoginScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.backButton} onPress={handleBackHome}>
-        <Text style={styles.backText}>⬅ Quay lại Trang chủ</Text>
+        <Ionicons name="arrow-back" size={28} color="#924900" />
       </TouchableOpacity>
 
       <Text style={styles.title}>Đăng nhập</Text>
