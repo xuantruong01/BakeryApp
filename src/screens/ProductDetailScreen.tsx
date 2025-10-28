@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -16,8 +16,9 @@ import { db } from "../services/firebaseConfig";
 
 export default function ProductDetailScreen({ route, navigation }: any) {
   const { product } = route.params;
+  const [quantity, setQuantity] = useState(1);
 
-  const addToCart = async (product: any) => {
+  const addToCart = async () => {
     try {
       const userJson = await AsyncStorage.getItem("user");
       const user = userJson ? JSON.parse(userJson) : null;
@@ -31,27 +32,37 @@ export default function ProductDetailScreen({ route, navigation }: any) {
       const cartItemSnap = await getDoc(cartItemRef);
 
       if (cartItemSnap.exists()) {
-        await updateDoc(cartItemRef, { quantity: increment(1) });
+        await updateDoc(cartItemRef, { quantity: increment(quantity) });
       } else {
         await setDoc(cartItemRef, {
           id: product.id,
           name: product.name,
           price: product.price,
           imageUrl: product.imageUrl || "",
-          quantity: 1,
+          quantity: quantity,
           createdAt: new Date().toISOString(),
         });
       }
 
-      Alert.alert("🛒", "Đã thêm vào giỏ hàng!");
+      Alert.alert("🛒", `Đã thêm ${quantity} sản phẩm vào giỏ hàng!`);
+      setQuantity(1);
     } catch (error) {
       console.error("❌ Lỗi khi thêm vào giỏ hàng:", error);
     }
   };
 
+  const increase = () => {
+    if (product.stock && quantity >= product.stock) return;
+    setQuantity(quantity + 1);
+  };
+
+  const decrease = () => {
+    if (quantity > 1) setQuantity(quantity - 1);
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView style={styles.container}>
+      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 100 }}>
         {/* 🔙 Nút quay lại */}
         <TouchableOpacity
           style={styles.backButton}
@@ -76,6 +87,35 @@ export default function ProductDetailScreen({ route, navigation }: any) {
             {Number(product.price).toLocaleString()} VND
           </Text>
 
+          {/* Bộ chọn số lượng */}
+          <View style={styles.qtyContainer}>
+            <Text style={styles.qtyLabel}>Số lượng</Text>
+            <View style={styles.qtyBox}>
+              <TouchableOpacity
+                style={styles.qtyBtn}
+                onPress={decrease}
+                disabled={quantity <= 1}
+              >
+                <Text style={[styles.qtySymbol, quantity <= 1 && { color: "#bbb" }]}>−</Text>
+              </TouchableOpacity>
+              <Text style={styles.qtyNumber}>{quantity}</Text>
+              <TouchableOpacity
+                style={styles.qtyBtn}
+                onPress={increase}
+                disabled={product.stock && quantity >= product.stock}
+              >
+                <Text
+                  style={[
+                    styles.qtySymbol,
+                    product.stock && quantity >= product.stock && { color: "#bbb" },
+                  ]}
+                >
+                  +
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           <Text style={styles.section}>Mô tả</Text>
           <Text style={styles.desc}>
             {product.description || "Không có mô tả."}
@@ -83,16 +123,25 @@ export default function ProductDetailScreen({ route, navigation }: any) {
 
           <Text style={styles.section}>Tồn kho</Text>
           <Text>{product.stock ?? 0} sản phẩm</Text>
-
-          <TouchableOpacity
-            style={styles.btn}
-            onPress={() => addToCart(product)}
-            activeOpacity={0.9}
-          >
-            <Text style={styles.btnText}>🛒 Thêm vào giỏ</Text>
-          </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Nút thêm vào giỏ hàng cố định cuối màn */}
+      <View style={styles.bottomBar}>
+        <TouchableOpacity
+          style={[
+            styles.btnAddCart,
+            product.stock === 0 && { backgroundColor: "#ccc" },
+          ]}
+          onPress={addToCart}
+          activeOpacity={0.9}
+          disabled={product.stock === 0}
+        >
+          <Text style={styles.btnText}>
+            🛒 Thêm {quantity} vào giỏ
+          </Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
@@ -100,6 +149,7 @@ export default function ProductDetailScreen({ route, navigation }: any) {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#fff" },
   container: { flex: 1, backgroundColor: "#fff" },
+
   backButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -112,21 +162,51 @@ const styles = StyleSheet.create({
     color: "#333",
     marginLeft: 5,
   },
+
   image: { width: "100%", height: 260, borderRadius: 10 },
   body: { padding: 16 },
   name: { fontSize: 22, fontWeight: "700", color: "#333" },
-  price: {
-    marginTop: 6,
-    fontSize: 18,
-    color: "#E58E26",
-    fontWeight: "700",
+  price: { marginTop: 6, fontSize: 18, color: "#E58E26", fontWeight: "700" },
+
+  // Bộ chọn số lượng
+  qtyContainer: {
+    marginTop: 15,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
+  qtyLabel: { fontSize: 16, fontWeight: "600", color: "#333" },
+  qtyBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f7f7f7",
+    borderRadius: 10,
+    paddingHorizontal: 8,
+  },
+  qtyBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  qtySymbol: { fontSize: 20, fontWeight: "700", color: "#E58E26" },
+  qtyNumber: { fontSize: 16, fontWeight: "600", color: "#333", minWidth: 30, textAlign: "center" },
+
   section: { marginTop: 16, fontSize: 16, fontWeight: "700" },
   desc: { marginTop: 6, color: "#555", lineHeight: 20 },
-  btn: {
-    marginTop: 20,
-    backgroundColor: "#E58E26",
+
+  // Nút thêm vào giỏ cố định
+  bottomBar: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#fff",
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
     padding: 12,
+  },
+  btnAddCart: {
+    backgroundColor: "#E58E26",
+    paddingVertical: 14,
     borderRadius: 10,
     alignItems: "center",
   },
