@@ -107,7 +107,7 @@ const AddAddressScreen = ({ route, navigation }: any) => {
           <Ionicons name="arrow-back" size={28} color="#924900" />
         </TouchableOpacity>
         <Text style={styles.title}>Thông tin giao hàng</Text>
-        <View style={{ width: 40 }} /> {/* 👈 Spacer để căn giữa tiêu đề */}
+        
       </View>
 
       {/* --- Form --- */}

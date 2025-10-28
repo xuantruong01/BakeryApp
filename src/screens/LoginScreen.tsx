@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Button,
   StyleSheet,
   Alert,
 } from "react-native";
@@ -17,22 +16,41 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const [errors, setErrors] = useState({ email: "", password: "" });
+
   const route = useRoute();
 
-  const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert("Lỗi", "Vui lòng nhập đầy đủ thông tin!");
-      return;
+  const validate = () => {
+    let valid = true;
+    let newErrors = { email: "", password: "" };
+
+    if (!email.trim()) {
+      newErrors.email = "Vui lòng nhập email";
+      valid = false;
+    }
+    if (!password.trim()) {
+      newErrors.password = "Vui lòng nhập mật khẩu";
+      valid = false;
     }
 
-    setLoading(true);
+    setErrors(newErrors);
+    return valid;
+  };
+
+  const handleLogin = async () => {
+    if (!validate()) return;
+
     try {
+      setLoading(true);
       const userCredential = await signInWithEmailAndPassword(
         auth,
         email,
         password
       );
+
       const user = userCredential.user;
 
       await AsyncStorage.setItem(
@@ -40,71 +58,93 @@ const LoginScreen = ({ navigation }) => {
         JSON.stringify({ uid: user.uid, email: user.email })
       );
 
-      const redirectTo = route.params?.redirectTo || "MainTabs";
-
-      // 🧭 Điều hướng linh hoạt
-      if (redirectTo === "Cart" || redirectTo === "Account") {
-        navigation.navigate("MainTabs", { screen: redirectTo });
-      } else if (redirectTo === "MainTabs") {
-        navigation.navigate("MainTabs");
-      } else {
-        navigation.navigate(redirectTo);
-      }
-
       Alert.alert("✅ Thành công", "Đăng nhập thành công!");
-    } catch (error: any) {
-      console.error("❌ Lỗi đăng nhập:", error.message);
-      Alert.alert("Đăng nhập thất bại", "Sai Gmail hoặc mật khẩu!");
+
+      const redirectTo = route.params?.redirectTo || "MainTabs";
+      navigation.navigate("MainTabs", { screen: redirectTo });
+    } catch (error) {
+      Alert.alert("❌ Lỗi", "Sai email hoặc mật khẩu!");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleBackHome = async () => {
-    await AsyncStorage.removeItem("user");
-    navigation.navigate("MainTabs");
-  };
-
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.backButton} onPress={handleBackHome}>
+      {/* nút back */}
+      <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate("MainTabs")}>
         <Ionicons name="arrow-back" size={28} color="#924900" />
       </TouchableOpacity>
 
       <Text style={styles.title}>Đăng nhập</Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Nhập Gmail"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
+      {/* Email */}
+      <View style={styles.inputWrapper}>
+        <TextInput
+          style={[styles.input, errors.email ? styles.inputError : null]}
+          placeholder="Nhập Gmail"
+          value={email}
+          onChangeText={(t) => {
+            setEmail(t);
+            errors.email && setErrors({ ...errors, email: "" });
+          }}
+          autoCapitalize="none"
+          keyboardType="email-address"
+          onBlur={() => {
+            if (!email.trim())
+              setErrors((e) => ({ ...e, email: "Vui lòng nhập email" }));
+          }}
+        />
+        {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
+      </View>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Nhập mật khẩu"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
+      {/* Password */}
+      <View style={styles.inputWrapper}>
+        <View style={styles.passRow}>
+          <TextInput
+            style={[styles.input, errors.password ? styles.inputError : null, { flex: 1 }]}
+            placeholder="Nhập mật khẩu"
+            value={password}
+            secureTextEntry={!showPass}
+            onChangeText={(t) => {
+              setPassword(t);
+              errors.password && setErrors({ ...errors, password: "" });
+            }}
+            onBlur={() => {
+              if (!password.trim())
+                setErrors((e) => ({ ...e, password: "Vui lòng nhập mật khẩu" }));
+            }}
+          />
+          <TouchableOpacity onPress={() => setShowPass(!showPass)}>
+            <Ionicons
+              name={showPass ? "eye-off" : "eye"}
+              size={22}
+              color="#924900"
+              style={{ marginLeft: 8 }}
+            />
+          </TouchableOpacity>
+        </View>
+        {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
+      </View>
 
       <TouchableOpacity onPress={() => alert("Tính năng đang phát triển!")}>
         <Text style={styles.forgotText}>Quên mật khẩu?</Text>
       </TouchableOpacity>
 
-      <View style={{ width: "80%", marginTop: 10 }}>
-        <Button
-          title={loading ? "Đang đăng nhập..." : "Đăng nhập"}
-          onPress={handleLogin}
-          color="#924900"
-          disabled={loading}
-        />
-      </View>
+      {/* Nút đăng nhập đẹp */}
+      <TouchableOpacity
+        style={[styles.loginBtn, loading && { opacity: 0.6 }]}
+        disabled={loading}
+        onPress={handleLogin}
+      >
+        <Text style={styles.loginTextBtn}>
+          {loading ? "Đang đăng nhập..." : "Đăng nhập"}
+        </Text>
+      </TouchableOpacity>
 
+      {/* Chuyển sang đăng ký */}
       <View style={styles.footer}>
-        <Text>Bạn chưa có tài khoản? </Text>
+        <Text>Chưa có tài khoản? </Text>
         <TouchableOpacity onPress={() => navigation.navigate("SignUp")}>
           <Text style={styles.signupText}>Đăng ký</Text>
         </TouchableOpacity>
@@ -115,47 +155,81 @@ const LoginScreen = ({ navigation }) => {
 
 export default LoginScreen;
 
+// ✅ Giao diện đẹp hơn – border, highlight, nút bo góc, màu chuẩn
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", alignItems: "center" },
+  container: { flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 25 },
+
   title: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: "bold",
     marginBottom: 30,
     color: "#924900",
   },
+
+  inputWrapper: { width: "100%", marginBottom: 12 },
+
   input: {
-    width: "80%",
-    borderWidth: 1,
+    width: "100%",
+    borderWidth: 1.5,
     borderColor: "#ccc",
-    borderRadius: 10,
+    borderRadius: 12,
     padding: 12,
-    marginBottom: 15,
     fontSize: 16,
+    backgroundColor: "#fff",
   },
+
+  inputError: {
+    borderColor: "red",
+  },
+
+  errorText: {
+    color: "red",
+    marginTop: 4,
+    fontSize: 13,
+    marginLeft: 4,
+  },
+
+  passRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  loginBtn: {
+    width: "100%",
+    padding: 14,
+    backgroundColor: "#924900",
+    borderRadius: 12,
+    alignItems: "center",
+    marginTop: 15,
+  },
+
+  loginTextBtn: {
+    color: "white",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+
   forgotText: {
     alignSelf: "flex-end",
-    marginRight: "10%",
     fontSize: 14,
     color: "#924900",
     marginBottom: 10,
   },
+
+  signupText: {
+    color: "#924900",
+    fontWeight: "bold",
+  },
+
   footer: {
     flexDirection: "row",
     marginTop: 20,
     alignItems: "center",
   },
-  signupText: {
-    color: "#924900",
-    fontWeight: "bold",
-  },
+
   backButton: {
     position: "absolute",
     top: 50,
     left: 20,
-  },
-  backText: {
-    fontSize: 16,
-    color: "#924900",
-    fontWeight: "500",
   },
 });
