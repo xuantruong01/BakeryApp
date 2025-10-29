@@ -41,7 +41,6 @@ export default function CartScreen() {
 
         const itemsRef = collection(db, "carts", user.uid, "items");
         const itemsSnap = await getDocs(itemsRef);
-
         const items = itemsSnap.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
@@ -61,15 +60,15 @@ export default function CartScreen() {
       }
     };
 
-    // 👇 Lắng nghe mỗi khi màn hình được focus lại
+    // Lắng nghe khi màn hình được focus lại
     const unsubscribe = navigation.addListener("focus", fetchCart);
     return unsubscribe;
   }, [navigation]);
 
-  // 🧮 Hàm cập nhật số lượng
+  // 🧮 Cập nhật số lượng
   const updateQuantity = async (item: any, delta: number) => {
     try {
-      if (item.quantity + delta < 1) return; // ❌ Không cho nhỏ hơn 1
+      if (item.quantity + delta < 1) return;
 
       const userJson = await AsyncStorage.getItem("user");
       const user = userJson ? JSON.parse(userJson) : null;
@@ -77,8 +76,8 @@ export default function CartScreen() {
 
       const itemRef = doc(db, "carts", user.uid, "items", item.id);
       const newQty = item.quantity + delta;
-
       await updateDoc(itemRef, { quantity: newQty });
+
       setCartItems((prev) =>
         prev.map((i) => (i.id === item.id ? { ...i, quantity: newQty } : i))
       );
@@ -88,7 +87,7 @@ export default function CartScreen() {
     }
   };
 
-  // 🗑 Hàm xóa sản phẩm
+  // 🗑 Xóa sản phẩm
   const removeItem = async (item: any) => {
     Alert.alert(
       "Xóa sản phẩm",
@@ -153,7 +152,6 @@ export default function CartScreen() {
                       {parseInt(item.price).toLocaleString()}đ
                     </Text>
 
-                    {/* Khu vực tăng giảm */}
                     <View style={styles.quantityContainer}>
                       <TouchableOpacity
                         style={styles.qtyBtn}
@@ -173,7 +171,6 @@ export default function CartScreen() {
                     </View>
                   </View>
 
-                  {/* 🗑 Nút xóa */}
                   <TouchableOpacity
                     style={styles.deleteBtn}
                     onPress={() => removeItem(item)}
@@ -184,10 +181,20 @@ export default function CartScreen() {
               )}
             />
 
+            {/* Tổng cộng + Nút đặt hàng */}
             <View style={styles.total}>
               <Text style={styles.totalText}>
                 Tổng cộng: {total.toLocaleString()}đ
               </Text>
+
+              {cartItems.length > 0 && (
+                <TouchableOpacity
+                  style={styles.checkoutBtn}
+                  onPress={() => navigation.navigate("Checkout")}
+                >
+                  <Text style={styles.checkoutText}>🛍 Đặt hàng ngay</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </>
         )}
@@ -195,6 +202,7 @@ export default function CartScreen() {
     </SafeAreaView>
   );
 }
+
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -288,5 +296,17 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textAlign: "right",
     color: "#924900",
+  },
+  checkoutBtn: {
+    marginTop: 10,
+    backgroundColor: "#E58E26",
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  checkoutText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
   },
 });
