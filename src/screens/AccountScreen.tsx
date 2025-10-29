@@ -85,7 +85,9 @@ const AccountScreen = () => {
           <Text style={styles.username}>
             👋 Xin chào, {user.fullname || user.displayName || user.email}
           </Text>
-          <Text style={styles.infoText}>📧 {user.email || "Chưa có email"}</Text>
+          <Text style={styles.infoText}>
+            📧 {user.email || "Chưa có email"}
+          </Text>
           <Text style={styles.infoText}>
             📞 {user.phoneNumber || "Chưa có số điện thoại"}
           </Text>

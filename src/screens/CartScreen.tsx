@@ -17,10 +17,11 @@ import {
   collection,
   getDocs,
   doc,
+  getDoc,
   updateDoc,
   deleteDoc,
 } from "firebase/firestore";
-import Ionicons from "@expo/vector-icons/Ionicons";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function CartScreen() {
   const navigation = useNavigation();
@@ -39,6 +40,7 @@ export default function CartScreen() {
           return;
         }
 
+        // 🔹 Lấy giỏ hàng người dùng
         const itemsRef = collection(db, "carts", user.uid, "items");
         const itemsSnap = await getDocs(itemsRef);
         const items = itemsSnap.docs.map((doc) => ({
@@ -46,9 +48,38 @@ export default function CartScreen() {
           ...doc.data(),
         }));
 
-        setCartItems(items);
+        // 🔹 Lấy stock thực tế từ Firestore
+        const updatedItems = await Promise.all(
+          items.map(async (item) => {
+            try {
+              const prodRef = doc(db, "products", item.id);
+              const prodSnap = await getDoc(prodRef);
+              const productData = prodSnap.exists() ? prodSnap.data() : null;
+              const stock = productData?.stock ?? 0;
 
-        const totalPrice = items.reduce(
+              // Nếu hết hàng hoặc vượt stock, đồng bộ lại
+              let newQty = Math.min(item.quantity, stock);
+              if (stock === 0) newQty = 0;
+
+              if (newQty !== item.quantity) {
+                const itemRef = doc(db, "carts", user.uid, "items", item.id);
+                if (newQty === 0) await deleteDoc(itemRef);
+                else await updateDoc(itemRef, { quantity: newQty });
+              }
+
+              return { ...item, stock, quantity: newQty };
+            } catch (e) {
+              console.warn("⚠️ Lỗi lấy stock:", e);
+              return { ...item, stock: 0 };
+            }
+          })
+        );
+
+        const filteredItems = updatedItems.filter((i) => i.quantity > 0);
+        setCartItems(filteredItems);
+
+        // 🔹 Cập nhật tổng tiền
+        const totalPrice = filteredItems.reduce(
           (sum, item) => sum + parseInt(item.price) * item.quantity,
           0
         );
@@ -60,22 +91,33 @@ export default function CartScreen() {
       }
     };
 
-    // Lắng nghe khi màn hình được focus lại
     const unsubscribe = navigation.addListener("focus", fetchCart);
     return unsubscribe;
   }, [navigation]);
 
-  // 🧮 Cập nhật số lượng
+  // 🧮 Cập nhật số lượng có kiểm tra stock
   const updateQuantity = async (item: any, delta: number) => {
     try {
-      if (item.quantity + delta < 1) return;
+      const newQty = item.quantity + delta;
+      if (newQty < 1) return;
+
+      const prodRef = doc(db, "products", item.id);
+      const prodSnap = await getDoc(prodRef);
+      const stock = prodSnap.exists() ? prodSnap.data().stock ?? 0 : 0;
+
+      if (newQty > stock) {
+        Alert.alert(
+          "⚠️ Vượt quá tồn kho",
+          `Chỉ còn ${stock} sản phẩm trong kho.`
+        );
+        return;
+      }
 
       const userJson = await AsyncStorage.getItem("user");
       const user = userJson ? JSON.parse(userJson) : null;
       if (!user?.uid) return;
 
       const itemRef = doc(db, "carts", user.uid, "items", item.id);
-      const newQty = item.quantity + delta;
       await updateDoc(itemRef, { quantity: newQty });
 
       setCartItems((prev) =>
@@ -89,32 +131,28 @@ export default function CartScreen() {
 
   // 🗑 Xóa sản phẩm
   const removeItem = async (item: any) => {
-    Alert.alert(
-      "Xóa sản phẩm",
-      `Bạn có chắc muốn xóa "${item.name}" khỏi giỏ hàng?`,
-      [
-        { text: "Hủy", style: "cancel" },
-        {
-          text: "Xóa",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              const userJson = await AsyncStorage.getItem("user");
-              const user = userJson ? JSON.parse(userJson) : null;
-              if (!user?.uid) return;
+    Alert.alert("Xóa sản phẩm", `Xóa "${item.name}" khỏi giỏ hàng?`, [
+      { text: "Hủy", style: "cancel" },
+      {
+        text: "Xóa",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            const userJson = await AsyncStorage.getItem("user");
+            const user = userJson ? JSON.parse(userJson) : null;
+            if (!user?.uid) return;
 
-              const itemRef = doc(db, "carts", user.uid, "items", item.id);
-              await deleteDoc(itemRef);
+            const itemRef = doc(db, "carts", user.uid, "items", item.id);
+            await deleteDoc(itemRef);
 
-              setCartItems((prev) => prev.filter((i) => i.id !== item.id));
-              setTotal((prev) => prev - item.quantity * parseInt(item.price));
-            } catch (error) {
-              console.error("❌ Lỗi khi xóa sản phẩm:", error);
-            }
-          },
+            setCartItems((prev) => prev.filter((i) => i.id !== item.id));
+            setTotal((prev) => prev - item.quantity * parseInt(item.price));
+          } catch (error) {
+            console.error("❌ Lỗi khi xóa sản phẩm:", error);
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   if (loading) {
@@ -151,24 +189,45 @@ export default function CartScreen() {
                     <Text style={styles.price}>
                       {parseInt(item.price).toLocaleString()}đ
                     </Text>
+                    {item.stock === 0 ? (
+                      <Text style={{ color: "red", fontSize: 13 }}>
+                        Hết hàng
+                      </Text>
+                    ) : (
+                      <View style={styles.quantityContainer}>
+                        <TouchableOpacity
+                          style={styles.qtyBtn}
+                          onPress={() => updateQuantity(item, -1)}
+                          disabled={item.quantity <= 1}
+                        >
+                          <Text
+                            style={[
+                              styles.qtyText,
+                              item.quantity <= 1 && { color: "#ccc" },
+                            ]}
+                          >
+                            −
+                          </Text>
+                        </TouchableOpacity>
 
-                    <View style={styles.quantityContainer}>
-                      <TouchableOpacity
-                        style={styles.qtyBtn}
-                        onPress={() => updateQuantity(item, -1)}
-                      >
-                        <Text style={styles.qtyText}>−</Text>
-                      </TouchableOpacity>
+                        <Text style={styles.qtyNumber}>{item.quantity}</Text>
 
-                      <Text style={styles.qtyNumber}>{item.quantity}</Text>
-
-                      <TouchableOpacity
-                        style={styles.qtyBtn}
-                        onPress={() => updateQuantity(item, +1)}
-                      >
-                        <Text style={styles.qtyText}>+</Text>
-                      </TouchableOpacity>
-                    </View>
+                        <TouchableOpacity
+                          style={styles.qtyBtn}
+                          onPress={() => updateQuantity(item, +1)}
+                          disabled={item.quantity >= item.stock}
+                        >
+                          <Text
+                            style={[
+                              styles.qtyText,
+                              item.quantity >= item.stock && { color: "#ccc" },
+                            ]}
+                          >
+                            +
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
                   </View>
 
                   <TouchableOpacity
@@ -181,7 +240,7 @@ export default function CartScreen() {
               )}
             />
 
-            {/* Tổng cộng + Nút đặt hàng */}
+            {/* Tổng cộng */}
             <View style={styles.total}>
               <Text style={styles.totalText}>
                 Tổng cộng: {total.toLocaleString()}đ
@@ -204,26 +263,15 @@ export default function CartScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
+  safeArea: { flex: 1, backgroundColor: "#fff" },
   container: {
     flex: 1,
     backgroundColor: "#fff",
     paddingHorizontal: 16,
     paddingTop: 10,
   },
-  center: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  text: {
-    fontSize: 18,
-    textAlign: "center",
-    marginTop: 40,
-  },
+  center: { flex: 1, justifyContent: "center", alignItems: "center" },
+  text: { fontSize: 18, textAlign: "center", marginTop: 40 },
   item: {
     flexDirection: "row",
     alignItems: "center",
@@ -238,21 +286,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#eee",
   },
-  itemImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 10,
-    marginRight: 12,
-  },
-  itemInfo: {
-    flex: 1,
-    justifyContent: "space-between",
-  },
-  name: {
-    fontWeight: "bold",
-    fontSize: 16,
-    color: "#333",
-  },
+  itemImage: { width: 80, height: 80, borderRadius: 10, marginRight: 12 },
+  itemInfo: { flex: 1, justifyContent: "space-between" },
+  name: { fontWeight: "bold", fontSize: 16, color: "#333" },
   price: {
     color: "#E58E26",
     fontWeight: "600",
@@ -272,19 +308,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  qtyText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  qtyNumber: {
-    marginHorizontal: 10,
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  deleteBtn: {
-    paddingHorizontal: 6,
-  },
+  qtyText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
+  qtyNumber: { marginHorizontal: 10, fontSize: 16, fontWeight: "600" },
+  deleteBtn: { paddingHorizontal: 6 },
   total: {
     paddingVertical: 16,
     borderTopWidth: 1,
@@ -304,9 +330,5 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
   },
-  checkoutText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "700",
-  },
+  checkoutText: { color: "#fff", fontSize: 16, fontWeight: "700" },
 });
