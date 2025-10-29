@@ -62,7 +62,10 @@ export default function ProductDetailScreen({ route, navigation }: any) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
         {/* 🔙 Nút quay lại */}
         <TouchableOpacity
           style={styles.backButton}
@@ -96,7 +99,11 @@ export default function ProductDetailScreen({ route, navigation }: any) {
                 onPress={decrease}
                 disabled={quantity <= 1}
               >
-                <Text style={[styles.qtySymbol, quantity <= 1 && { color: "#bbb" }]}>−</Text>
+                <Text
+                  style={[styles.qtySymbol, quantity <= 1 && { color: "#bbb" }]}
+                >
+                  −
+                </Text>
               </TouchableOpacity>
               <Text style={styles.qtyNumber}>{quantity}</Text>
               <TouchableOpacity
@@ -107,7 +114,8 @@ export default function ProductDetailScreen({ route, navigation }: any) {
                 <Text
                   style={[
                     styles.qtySymbol,
-                    product.stock && quantity >= product.stock && { color: "#bbb" },
+                    product.stock &&
+                      quantity >= product.stock && { color: "#bbb" },
                   ]}
                 >
                   +
@@ -128,19 +136,27 @@ export default function ProductDetailScreen({ route, navigation }: any) {
 
       {/* Nút thêm vào giỏ hàng cố định cuối màn */}
       <View style={styles.bottomBar}>
-        <TouchableOpacity
-          style={[
-            styles.btnAddCart,
-            product.stock === 0 && { backgroundColor: "#ccc" },
-          ]}
-          onPress={addToCart}
-          activeOpacity={0.9}
-          disabled={product.stock === 0}
-        >
-          <Text style={styles.btnText}>
-            🛒 Thêm {quantity} vào giỏ
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.buttonRow}>
+          <TouchableOpacity
+            style={styles.btnAddCart}
+            onPress={addToCart}
+            activeOpacity={0.9}
+          >
+            <Text style={styles.btnText}>🛒 Thêm {quantity}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.btnCheckout}
+            onPress={() =>
+              navigation.navigate("Checkout", {
+                productDirect: { ...product, quantity },
+              })
+            }
+            activeOpacity={0.9}
+          >
+            <Text style={styles.btnText}>💳 Đặt ngay</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -161,6 +177,65 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     color: "#333",
     marginLeft: 5,
+  },
+
+  bottomBar: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#fff",
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+
+  // 🧱 Hàng chứa 2 nút
+  buttonRow: {
+    flexDirection: "row", // ✅ đặt ngang
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12, // RN 0.71+ (nếu RN cũ -> dùng marginRight thay)
+  },
+
+  btnAddCart: {
+    flex: 1, // ✅ chiếm đều
+    backgroundColor: "#E58E26",
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    height: 55,
+    marginRight: 6, // nếu RN < 0.71
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+
+  btnCheckout: {
+    flex: 1,
+    backgroundColor: "#924900",
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    height: 55,
+    marginLeft: 6, // nếu RN < 0.71
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+
+  btnText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
+    letterSpacing: 0.5,
   },
 
   image: { width: "100%", height: 260, borderRadius: 10 },
@@ -188,27 +263,14 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   qtySymbol: { fontSize: 20, fontWeight: "700", color: "#E58E26" },
-  qtyNumber: { fontSize: 16, fontWeight: "600", color: "#333", minWidth: 30, textAlign: "center" },
+  qtyNumber: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+    minWidth: 30,
+    textAlign: "center",
+  },
 
   section: { marginTop: 16, fontSize: 16, fontWeight: "700" },
   desc: { marginTop: 6, color: "#555", lineHeight: 20 },
-
-  // Nút thêm vào giỏ cố định
-  bottomBar: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "#fff",
-    borderTopWidth: 1,
-    borderTopColor: "#eee",
-    padding: 12,
-  },
-  btnAddCart: {
-    backgroundColor: "#E58E26",
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  btnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
 });
