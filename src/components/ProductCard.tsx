@@ -8,19 +8,41 @@ type Props = {
     description?: string;
     imageUrl?: string;
     price?: number;
+    stock?: number; // ✅ thêm field stock
   };
   onPress?: () => void;
 };
 
 const ProductCard = ({ item, onPress }: Props) => {
+  const isOutOfStock = item.stock === 0;
+
   return (
-    <TouchableOpacity style={styles.card} activeOpacity={0.85} onPress={onPress}>
-  <Image source={{ uri: item.imageUrl || "https://via.placeholder.com/100" }} style={styles.image} />
-  <View style={styles.info}>
-    <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
-    <Text style={styles.price}>{item.price?.toLocaleString()} VNĐ</Text>
-  </View>
-</TouchableOpacity>
+    <TouchableOpacity
+      style={[styles.card, isOutOfStock && { opacity: 0.6 }]} // làm mờ nếu hết hàng
+      activeOpacity={0.85}
+      onPress={!isOutOfStock ? onPress : undefined} // ✅ chặn bấm
+    >
+      <View style={styles.imageWrap}>
+        <Image
+          source={{ uri: item.imageUrl || "https://via.placeholder.com/100" }}
+          style={styles.image}
+        />
+
+        {/* ✅ Hiển thị chữ “Hết hàng” đè lên ảnh */}
+        {isOutOfStock && (
+          <View style={styles.overlay}>
+            <Text style={styles.outOfStockText}>Hết hàng</Text>
+          </View>
+        )}
+      </View>
+
+      <View style={styles.info}>
+        <Text style={styles.name} numberOfLines={1}>
+          {item.name}
+        </Text>
+        <Text style={styles.price}>{item.price?.toLocaleString()} VNĐ</Text>
+      </View>
+    </TouchableOpacity>
   );
 };
 
@@ -41,20 +63,34 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     shadowOffset: { width: 0, height: 2 },
   },
+  imageWrap: {
+    position: "relative",
+    marginRight: 12,
+  },
   image: {
     width: 90,
     height: 90,
     borderRadius: 10,
-    marginRight: 12,
     backgroundColor: "#f2f2f2",
+  },
+  overlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  outOfStockText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
   },
   info: { flex: 1, justifyContent: "center" },
   name: { fontSize: 16, fontWeight: "600", color: "#333" },
-  desc: {
-    fontSize: 13,
-    color: "#777",
-    marginTop: 3,
-  },
   price: {
     fontSize: 15,
     fontWeight: "bold",

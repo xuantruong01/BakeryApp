@@ -7,9 +7,10 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  TextInput, // ✅ thêm import TextInput
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Ionicons from "@expo/vector-icons/Ionicons";
+import { Ionicons } from "@expo/vector-icons"; // ✅ sửa import Ionicons
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { doc, getDoc, setDoc, updateDoc, increment } from "firebase/firestore";
 import { db } from "../services/firebaseConfig";
@@ -18,6 +19,7 @@ export default function ProductDetailScreen({ route, navigation }: any) {
   const { product } = route.params;
   const [quantity, setQuantity] = useState(1);
 
+  /* ------------------- Thêm vào giỏ hàng ------------------- */
   const addToCart = async () => {
     try {
       const userJson = await AsyncStorage.getItem("user");
@@ -25,6 +27,11 @@ export default function ProductDetailScreen({ route, navigation }: any) {
 
       if (!user?.uid) {
         Alert.alert("⚠️", "Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng!");
+        return;
+      }
+
+      if (product.stock === 0) {
+        Alert.alert("⚠️", "Sản phẩm đã hết hàng!");
         return;
       }
 
@@ -51,15 +58,17 @@ export default function ProductDetailScreen({ route, navigation }: any) {
     }
   };
 
+  /* ------------------- Tăng / giảm số lượng ------------------- */
   const increase = () => {
-    if (product.stock && quantity >= product.stock) return;
-    setQuantity(quantity + 1);
+    const maxStock = product.stock ?? 9999;
+    if (quantity < maxStock) setQuantity(quantity + 1);
   };
 
   const decrease = () => {
     if (quantity > 1) setQuantity(quantity - 1);
   };
 
+  /* ------------------- Render giao diện ------------------- */
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView
@@ -90,40 +99,76 @@ export default function ProductDetailScreen({ route, navigation }: any) {
             {Number(product.price).toLocaleString()} VND
           </Text>
 
-          {/* Bộ chọn số lượng */}
+          {/* 🧱 Bộ chọn số lượng */}
           <View style={styles.qtyContainer}>
             <Text style={styles.qtyLabel}>Số lượng</Text>
+
             <View style={styles.qtyBox}>
+              {/* Giảm số lượng */}
               <TouchableOpacity
                 style={styles.qtyBtn}
                 onPress={decrease}
-                disabled={quantity <= 1}
-              >
-                <Text
-                  style={[styles.qtySymbol, quantity <= 1 && { color: "#bbb" }]}
-                >
-                  −
-                </Text>
-              </TouchableOpacity>
-              <Text style={styles.qtyNumber}>{quantity}</Text>
-              <TouchableOpacity
-                style={styles.qtyBtn}
-                onPress={increase}
-                disabled={product.stock && quantity >= product.stock}
+                disabled={quantity <= 1 || product.stock === 0}
               >
                 <Text
                   style={[
                     styles.qtySymbol,
-                    product.stock &&
-                      quantity >= product.stock && { color: "#bbb" },
+                    (quantity <= 1 || product.stock === 0) && { color: "#bbb" },
+                  ]}
+                >
+                  −
+                </Text>
+              </TouchableOpacity>
+
+              {/* ✅ Ô nhập số lượng */}
+              <TextInput
+                style={styles.qtyInput}
+                keyboardType="numeric"
+                editable={product.stock > 0} // ❌ Không cho nhập nếu hết hàng
+                value={String(quantity)}
+                onChangeText={(text) => {
+                  const num = parseInt(text.replace(/[^0-9]/g, ""), 10);
+                  if (isNaN(num)) {
+                    setQuantity(1);
+                    return;
+                  }
+
+                  const maxStock = product.stock ?? 9999;
+                  if (num > maxStock) setQuantity(maxStock);
+                  else if (num < 1) setQuantity(1);
+                  else setQuantity(num);
+                }}
+              />
+
+              {/* Tăng số lượng */}
+              <TouchableOpacity
+                style={styles.qtyBtn}
+                onPress={increase}
+                disabled={
+                  product.stock === 0 || quantity >= (product.stock ?? 9999)
+                }
+              >
+                <Text
+                  style={[
+                    styles.qtySymbol,
+                    (product.stock === 0 ||
+                      quantity >= (product.stock ?? 9999)) && { color: "#bbb" },
                   ]}
                 >
                   +
                 </Text>
               </TouchableOpacity>
             </View>
+
+            {/* ⚠️ Nếu hết hàng */}
+            {product.stock === 0 && (
+              <Text style={{ color: "red", marginTop: 4, fontSize: 13 }}>
+                Sản phẩm đã hết hàng
+              </Text>
+            )}
           </View>
 
+          {/* Mô tả & tồn kho */}
           <Text style={styles.section}>Mô tả</Text>
           <Text style={styles.desc}>
             {product.description || "Không có mô tả."}
@@ -134,27 +179,39 @@ export default function ProductDetailScreen({ route, navigation }: any) {
         </View>
       </ScrollView>
 
-      {/* Nút thêm vào giỏ hàng cố định cuối màn */}
+      {/* 🛒 Thanh hành động */}
       <View style={styles.bottomBar}>
         <View style={styles.buttonRow}>
           <TouchableOpacity
-            style={styles.btnAddCart}
+            style={[
+              styles.btnAddCart,
+              product.stock === 0 && { backgroundColor: "#ccc" },
+            ]}
             onPress={addToCart}
             activeOpacity={0.9}
+            disabled={product.stock === 0}
           >
-            <Text style={styles.btnText}>🛒 Thêm {quantity}</Text>
+            <Text style={styles.btnText}>
+              🛒 {product.stock === 0 ? "Hết hàng" : `Thêm ${quantity}`}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.btnCheckout}
+            style={[
+              styles.btnCheckout,
+              product.stock === 0 && { backgroundColor: "#ccc" },
+            ]}
             onPress={() =>
               navigation.navigate("Checkout", {
                 productDirect: { ...product, quantity },
               })
             }
             activeOpacity={0.9}
+            disabled={product.stock === 0}
           >
-            <Text style={styles.btnText}>💳 Đặt ngay</Text>
+            <Text style={styles.btnText}>
+              💳 {product.stock === 0 ? "Không thể đặt" : "Đặt ngay"}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -162,6 +219,7 @@ export default function ProductDetailScreen({ route, navigation }: any) {
   );
 }
 
+/* ================== STYLES ================== */
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#fff" },
   container: { flex: 1, backgroundColor: "#fff" },
@@ -179,6 +237,42 @@ const styles = StyleSheet.create({
     marginLeft: 5,
   },
 
+  image: { width: "100%", height: 260, borderRadius: 10 },
+  body: { padding: 16 },
+  name: { fontSize: 22, fontWeight: "700", color: "#333" },
+  price: { marginTop: 6, fontSize: 18, color: "#E58E26", fontWeight: "700" },
+
+  qtyContainer: {
+    marginTop: 15,
+    flexDirection: "column",
+    alignItems: "flex-start",
+  },
+  qtyLabel: { fontSize: 16, fontWeight: "600", color: "#333", marginBottom: 6 },
+  qtyBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f7f7f7",
+    borderRadius: 10,
+    paddingHorizontal: 8,
+  },
+  qtyBtn: { paddingHorizontal: 12, paddingVertical: 6 },
+  qtySymbol: { fontSize: 20, fontWeight: "700", color: "#E58E26" },
+  qtyInput: {
+    width: 45,
+    height: 36,
+    textAlign: "center",
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    fontSize: 16,
+    color: "#333",
+    marginHorizontal: 6,
+    paddingVertical: 4,
+  },
+
+  section: { marginTop: 16, fontSize: 16, fontWeight: "700" },
+  desc: { marginTop: 6, color: "#555", lineHeight: 20 },
+
   bottomBar: {
     position: "absolute",
     bottom: 0,
@@ -190,31 +284,23 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
   },
-
-  // 🧱 Hàng chứa 2 nút
   buttonRow: {
-    flexDirection: "row", // ✅ đặt ngang
+    flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    gap: 12, // RN 0.71+ (nếu RN cũ -> dùng marginRight thay)
+    gap: 12,
   },
-
   btnAddCart: {
-    flex: 1, // ✅ chiếm đều
+    flex: 1,
     backgroundColor: "#E58E26",
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
     height: 55,
-    marginRight: 6, // nếu RN < 0.71
+    marginRight: 6,
     elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
   },
-
   btnCheckout: {
     flex: 1,
     backgroundColor: "#924900",
@@ -223,54 +309,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     height: 55,
-    marginLeft: 6, // nếu RN < 0.71
+    marginLeft: 6,
     elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
   },
-
   btnText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "700",
     letterSpacing: 0.5,
   },
-
-  image: { width: "100%", height: 260, borderRadius: 10 },
-  body: { padding: 16 },
-  name: { fontSize: 22, fontWeight: "700", color: "#333" },
-  price: { marginTop: 6, fontSize: 18, color: "#E58E26", fontWeight: "700" },
-
-  // Bộ chọn số lượng
-  qtyContainer: {
-    marginTop: 15,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  qtyLabel: { fontSize: 16, fontWeight: "600", color: "#333" },
-  qtyBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#f7f7f7",
-    borderRadius: 10,
-    paddingHorizontal: 8,
-  },
-  qtyBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  qtySymbol: { fontSize: 20, fontWeight: "700", color: "#E58E26" },
-  qtyNumber: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-    minWidth: 30,
-    textAlign: "center",
-  },
-
-  section: { marginTop: 16, fontSize: 16, fontWeight: "700" },
-  desc: { marginTop: 6, color: "#555", lineHeight: 20 },
 });

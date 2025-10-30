@@ -46,7 +46,7 @@ export default function AppNavigator() {
       <Stack.Screen
         name="Checkout"
         component={CheckoutScreen}
-        options={{ headerShown: true, title: "Xác nhận đơn hàng" }}
+        options={{ headerShown: false, title: "Xác nhận đơn hàng" }}
       />
     </Stack.Navigator>
   );

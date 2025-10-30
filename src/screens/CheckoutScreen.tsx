@@ -15,14 +15,17 @@ import { db } from "../services/firebaseConfig";
 import {
   collection,
   getDocs,
-  doc,
   getDoc,
+  doc,
   setDoc,
   addDoc,
+  updateDoc,
   deleteDoc,
   serverTimestamp,
 } from "firebase/firestore";
+
 import { useRoute, useNavigation } from "@react-navigation/native";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
 export default function CheckoutScreen() {
   const route = useRoute();
@@ -110,20 +113,15 @@ export default function CheckoutScreen() {
     }
 
     try {
-      // ✅ Lưu lại thông tin vào "addresses"
+      // ✅ Lưu thông tin giao hàng vào addresses
       const addressRef = doc(db, "addresses", user.uid);
       await setDoc(
         addressRef,
-        {
-          name,
-          address,
-          phone,
-          updatedAt: new Date().toISOString(),
-        },
+        { name, address, phone, updatedAt: new Date().toISOString() },
         { merge: true }
       );
 
-      // ✅ Thêm đơn hàng vào "orders"
+      // ✅ Thêm đơn hàng mới vào orders
       await addDoc(collection(db, "orders"), {
         userId: user.uid,
         name,
@@ -134,12 +132,27 @@ export default function CheckoutScreen() {
         createdAt: serverTimestamp(),
       });
 
+      // ✅ Cập nhật tồn kho từng sản phẩm
+      for (const item of cartItems) {
+        const productRef = doc(db, "products", item.id);
+        const productSnap = await getDoc(productRef);
+
+        if (productSnap.exists()) {
+          const productData = productSnap.data();
+          const currentStock = productData.stock ?? 0;
+          const newStock = Math.max(0, currentStock - item.quantity);
+
+          await updateDoc(productRef, { stock: newStock });
+          console.log(`📉 Cập nhật tồn kho: ${item.name} → ${newStock}`);
+        } else {
+          console.warn(`⚠️ Không tìm thấy sản phẩm trong kho: ${item.name}`);
+        }
+      }
+
       // ✅ Nếu đặt hàng từ giỏ → xóa giỏ hàng
       if (!directProduct) {
         const itemsRef = collection(db, "carts", user.uid, "items");
         const itemsSnap = await getDocs(itemsRef);
-
-        // ❌ Sửa lỗi item.ref.delete is not a function
         for (const item of itemsSnap.docs) {
           await deleteDoc(doc(db, "carts", user.uid, "items", item.id));
         }
@@ -166,6 +179,14 @@ export default function CheckoutScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => navigation.goBack()}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="chevron-back" size={24} color="#333" />
+        <Text style={styles.backText}>Quay lại</Text>
+      </TouchableOpacity>
       <FlatList
         ListHeaderComponent={
           <>
@@ -281,4 +302,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   confirmText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  backButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    marginTop: 5,
+  },
+  backText: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#333",
+    marginLeft: 5,
+  },
 });
