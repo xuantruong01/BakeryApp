@@ -151,6 +151,7 @@ const OrderHistoryScreen = () => {
                 key={order.id}
                 style={styles.orderCard}
                 activeOpacity={0.7}
+                onPress={() => (navigation as any).navigate("OrderDetail", { orderId: order.id })}
               >
                 <View style={styles.orderHeader}>
                   <View style={styles.orderIdContainer}>
@@ -198,7 +199,7 @@ const OrderHistoryScreen = () => {
                         order.status === "cancelled" && styles.cancelledPrice,
                       ]}
                     >
-                      {formatPrice(order.totalAmount || 0)}
+                      {formatPrice(order.total || 0)}
                     </Text>
                   </View>
                 </View>
