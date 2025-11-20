@@ -6,20 +6,29 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  Modal,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../services/firebaseConfig";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import Ionicons from "@expo/vector-icons/Ionicons";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
-
   const [errors, setErrors] = useState({ email: "", password: "" });
+  
+  // State cho modal quên mật khẩu
+  const [forgotModalVisible, setForgotModalVisible] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
 
   const route = useRoute();
 
@@ -60,7 +69,7 @@ const LoginScreen = ({ navigation }) => {
 
       Alert.alert("✅ Thành công", "Đăng nhập thành công!");
 
-      const redirectTo = route.params?.redirectTo || "MainTabs";
+      const redirectTo = (route.params as any)?.redirectTo || "MainTabs";
       navigation.navigate("MainTabs", { screen: redirectTo });
     } catch (error) {
       Alert.alert("❌ Lỗi", "Sai email hoặc mật khẩu!");
@@ -69,167 +78,456 @@ const LoginScreen = ({ navigation }) => {
     }
   };
 
+  // Hàm xử lý quên mật khẩu
+  const handleForgotPassword = async () => {
+    if (!resetEmail.trim()) {
+      Alert.alert("Thông báo", "Vui lòng nhập email của bạn");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(resetEmail)) {
+      Alert.alert("Lỗi", "Email không hợp lệ!");
+      return;
+    }
+
+    try {
+      setResetLoading(true);
+      await sendPasswordResetEmail(auth, resetEmail);
+      Alert.alert(
+        "✅ Thành công",
+        "Link đặt lại mật khẩu đã được gửi đến email của bạn. Vui lòng kiểm tra hộp thư!",
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              setForgotModalVisible(false);
+              setResetEmail("");
+            },
+          },
+        ]
+      );
+    } catch (error: any) {
+      let errorMessage = "Đã xảy ra lỗi. Vui lòng thử lại!";
+      if (error.code === "auth/user-not-found") {
+        errorMessage = "Email này chưa được đăng ký!";
+      } else if (error.code === "auth/invalid-email") {
+        errorMessage = "Email không hợp lệ!";
+      }
+      Alert.alert("❌ Lỗi", errorMessage);
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
   return (
-    <View style={styles.container}>
-      {/* nút back */}
-      <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate("MainTabs")}>
-        <Ionicons name="arrow-back" size={28} color="#924900" />
-      </TouchableOpacity>
-
-      <Text style={styles.title}>Đăng nhập</Text>
-
-      {/* Email */}
-      <View style={styles.inputWrapper}>
-        <TextInput
-          style={[styles.input, errors.email ? styles.inputError : null]}
-          placeholder="Nhập Gmail"
-          value={email}
-          onChangeText={(t) => {
-            setEmail(t);
-            errors.email && setErrors({ ...errors, email: "" });
-          }}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          onBlur={() => {
-            if (!email.trim())
-              setErrors((e) => ({ ...e, email: "Vui lòng nhập email" }));
-          }}
-        />
-        {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
-      </View>
-
-      {/* Password */}
-      <View style={styles.inputWrapper}>
-        <View style={styles.passRow}>
-          <TextInput
-            style={[styles.input, errors.password ? styles.inputError : null, { flex: 1 }]}
-            placeholder="Nhập mật khẩu"
-            value={password}
-            secureTextEntry={!showPass}
-            onChangeText={(t) => {
-              setPassword(t);
-              errors.password && setErrors({ ...errors, password: "" });
-            }}
-            onBlur={() => {
-              if (!password.trim())
-                setErrors((e) => ({ ...e, password: "Vui lòng nhập mật khẩu" }));
-            }}
-          />
-          <TouchableOpacity onPress={() => setShowPass(!showPass)}>
-            <Ionicons
-              name={showPass ? "eye-off" : "eye"}
-              size={22}
-              color="#924900"
-              style={{ marginLeft: 8 }}
-            />
-          </TouchableOpacity>
-        </View>
-        {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
-      </View>
-
-      <TouchableOpacity onPress={() => alert("Tính năng đang phát triển!")}>
-        <Text style={styles.forgotText}>Quên mật khẩu?</Text>
-      </TouchableOpacity>
-
-      {/* Nút đăng nhập đẹp */}
-      <TouchableOpacity
-        style={[styles.loginBtn, loading && { opacity: 0.6 }]}
-        disabled={loading}
-        onPress={handleLogin}
+    <KeyboardAvoidingView 
+      style={{ flex: 1 }} 
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <LinearGradient
+        colors={["#FFF5E6", "#FFE8CC", "#FFFFFF"]}
+        style={styles.container}
       >
-        <Text style={styles.loginTextBtn}>
-          {loading ? "Đang đăng nhập..." : "Đăng nhập"}
-        </Text>
-      </TouchableOpacity>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Nút back */}
+          <TouchableOpacity 
+            style={styles.backButton} 
+            onPress={() => navigation.navigate("MainTabs")}
+          >
+            <Ionicons name="arrow-back" size={28} color="#924900" />
+          </TouchableOpacity>
 
-      {/* Chuyển sang đăng ký */}
-      <View style={styles.footer}>
-        <Text>Chưa có tài khoản? </Text>
-        <TouchableOpacity onPress={() => navigation.navigate("SignUp")}>
-          <Text style={styles.signupText}>Đăng ký</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+          {/* Icon bánh mì đẹp */}
+          <View style={styles.iconContainer}>
+            <View style={styles.iconCircle}>
+              <Ionicons name="cafe" size={60} color="#924900" />
+            </View>
+          </View>
+
+          <Text style={styles.title}>Chào mừng trở lại!</Text>
+          <Text style={styles.subtitle}>Đăng nhập để tiếp tục</Text>
+
+          {/* Email */}
+          <View style={styles.inputWrapper}>
+            <View style={styles.inputContainer}>
+              <Ionicons name="mail-outline" size={22} color="#924900" style={styles.inputIcon} />
+              <TextInput
+                style={[styles.input, errors.email ? styles.inputError : null]}
+                placeholder="Nhập email của bạn"
+                placeholderTextColor="#999"
+                value={email}
+                onChangeText={(t) => {
+                  setEmail(t);
+                  errors.email && setErrors({ ...errors, email: "" });
+                }}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                onBlur={() => {
+                  if (!email.trim())
+                    setErrors((e) => ({ ...e, email: "Vui lòng nhập email" }));
+                }}
+              />
+            </View>
+            {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
+          </View>
+
+          {/* Password */}
+          <View style={styles.inputWrapper}>
+            <View style={styles.inputContainer}>
+              <Ionicons name="lock-closed-outline" size={22} color="#924900" style={styles.inputIcon} />
+              <TextInput
+                style={[styles.input, errors.password ? styles.inputError : null]}
+                placeholder="Nhập mật khẩu"
+                placeholderTextColor="#999"
+                value={password}
+                secureTextEntry={!showPass}
+                onChangeText={(t) => {
+                  setPassword(t);
+                  errors.password && setErrors({ ...errors, password: "" });
+                }}
+                onBlur={() => {
+                  if (!password.trim())
+                    setErrors((e) => ({ ...e, password: "Vui lòng nhập mật khẩu" }));
+                }}
+              />
+              <TouchableOpacity 
+                onPress={() => setShowPass(!showPass)}
+                style={styles.eyeIcon}
+              >
+                <Ionicons
+                  name={showPass ? "eye-off-outline" : "eye-outline"}
+                  size={22}
+                  color="#924900"
+                />
+              </TouchableOpacity>
+            </View>
+            {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
+          </View>
+
+          <TouchableOpacity onPress={() => setForgotModalVisible(true)}>
+            <Text style={styles.forgotText}>Quên mật khẩu?</Text>
+          </TouchableOpacity>
+
+          {/* Nút đăng nhập */}
+          <TouchableOpacity
+            style={[styles.loginBtn, loading && { opacity: 0.6 }]}
+            disabled={loading}
+            onPress={handleLogin}
+          >
+            <LinearGradient
+              colors={["#C06000", "#924900", "#6B3600"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.gradientButton}
+            >
+              <Text style={styles.loginTextBtn}>
+                {loading ? "Đang đăng nhập..." : "Đăng nhập"}
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          {/* Hoặc */}
+          <View style={styles.dividerContainer}>
+            <View style={styles.divider} />
+            <Text style={styles.dividerText}>hoặc</Text>
+            <View style={styles.divider} />
+          </View>
+
+          {/* Chuyển sang đăng ký */}
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>Chưa có tài khoản? </Text>
+            <TouchableOpacity onPress={() => navigation.navigate("SignUp")}>
+              <Text style={styles.signupText}>Đăng ký ngay</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+
+        {/* Modal quên mật khẩu */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={forgotModalVisible}
+          onRequestClose={() => {
+            setForgotModalVisible(false);
+            setResetEmail("");
+          }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Quên mật khẩu</Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    setForgotModalVisible(false);
+                    setResetEmail("");
+                  }}
+                >
+                  <Ionicons name="close-circle" size={28} color="#924900" />
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.modalDescription}>
+                Nhập email của bạn và chúng tôi sẽ gửi link đặt lại mật khẩu
+              </Text>
+
+              <View style={styles.modalInputContainer}>
+                <Ionicons name="mail-outline" size={22} color="#924900" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="Nhập email của bạn"
+                  placeholderTextColor="#999"
+                  value={resetEmail}
+                  onChangeText={setResetEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                />
+              </View>
+
+              <TouchableOpacity
+                style={[styles.modalButton, resetLoading && { opacity: 0.6 }]}
+                disabled={resetLoading}
+                onPress={handleForgotPassword}
+              >
+                <LinearGradient
+                  colors={["#C06000", "#924900", "#6B3600"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.gradientButton}
+                >
+                  <Text style={styles.modalButtonText}>
+                    {resetLoading ? "Đang gửi..." : "Gửi link đặt lại"}
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      </LinearGradient>
+    </KeyboardAvoidingView>
   );
 };
 
 export default LoginScreen;
 
-// ✅ Giao diện đẹp hơn – border, highlight, nút bo góc, màu chuẩn
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 25 },
-
+  container: { 
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 25,
+    paddingVertical: 40,
+  },
+  iconContainer: {
+    marginBottom: 20,
+  },
+  iconCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: "#FFF",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#924900",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+  },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: "bold",
-    marginBottom: 30,
+    marginBottom: 8,
     color: "#924900",
   },
-
-  inputWrapper: { width: "100%", marginBottom: 12 },
-
-  input: {
-    width: "100%",
-    borderWidth: 1.5,
-    borderColor: "#ccc",
-    borderRadius: 12,
-    padding: 12,
+  subtitle: {
     fontSize: 16,
-    backgroundColor: "#fff",
+    color: "#666",
+    marginBottom: 30,
   },
-
+  inputWrapper: { 
+    width: "100%", 
+    marginBottom: 16,
+  },
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
+    borderWidth: 2,
+    borderColor: "#E0E0E0",
+    borderRadius: 15,
+    backgroundColor: "#FFF",
+    paddingHorizontal: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  inputIcon: {
+    marginRight: 10,
+  },
+  input: {
+    flex: 1,
+    padding: 14,
+    fontSize: 16,
+    color: "#333",
+  },
   inputError: {
-    borderColor: "red",
+    borderColor: "#FF4444",
   },
-
   errorText: {
-    color: "red",
-    marginTop: 4,
+    color: "#FF4444",
+    marginTop: 6,
     fontSize: 13,
     marginLeft: 4,
   },
-
-  passRow: {
-    flexDirection: "row",
-    alignItems: "center",
+  eyeIcon: {
+    padding: 5,
   },
-
   loginBtn: {
     width: "100%",
-    padding: 14,
-    backgroundColor: "#924900",
-    borderRadius: 12,
-    alignItems: "center",
-    marginTop: 15,
+    borderRadius: 15,
+    marginTop: 10,
+    overflow: "hidden",
+    shadowColor: "#924900",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
-
+  gradientButton: {
+    padding: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   loginTextBtn: {
     color: "white",
     fontSize: 18,
     fontWeight: "bold",
   },
-
   forgotText: {
     alignSelf: "flex-end",
     fontSize: 14,
     color: "#924900",
     marginBottom: 10,
+    fontWeight: "600",
   },
-
+  dividerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
+    marginVertical: 25,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#E0E0E0",
+  },
+  dividerText: {
+    marginHorizontal: 15,
+    color: "#999",
+    fontSize: 14,
+  },
+  footer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  footerText: {
+    fontSize: 15,
+    color: "#666",
+  },
   signupText: {
     color: "#924900",
     fontWeight: "bold",
+    fontSize: 15,
   },
-
-  footer: {
-    flexDirection: "row",
-    marginTop: 20,
-    alignItems: "center",
-  },
-
   backButton: {
     position: "absolute",
     top: 50,
     left: 20,
+    zIndex: 10,
+    backgroundColor: "#FFF",
+    borderRadius: 25,
+    padding: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalContent: {
+    width: "100%",
+    maxWidth: 400,
+    backgroundColor: "#FFF",
+    borderRadius: 20,
+    padding: 25,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 15,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#924900",
+  },
+  modalDescription: {
+    fontSize: 15,
+    color: "#666",
+    marginBottom: 20,
+    lineHeight: 22,
+  },
+  modalInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#E0E0E0",
+    borderRadius: 15,
+    backgroundColor: "#FFF",
+    paddingHorizontal: 15,
+    marginBottom: 20,
+  },
+  modalInput: {
+    flex: 1,
+    padding: 14,
+    fontSize: 16,
+    color: "#333",
+  },
+  modalButton: {
+    width: "100%",
+    borderRadius: 15,
+    overflow: "hidden",
+    shadowColor: "#924900",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  modalButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });

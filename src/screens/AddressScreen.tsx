@@ -19,7 +19,8 @@ const AddAddressScreen = ({ route, navigation }: any) => {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
-  const [loading, setLoading] = useState(false); // 👈 Thêm trạng thái loading
+  const [loading, setLoading] = useState(false);
+  const [isNewAddress, setIsNewAddress] = useState(false); // Kiểm tra địa chỉ mới
 
   const [errors, setErrors] = useState({
     name: "",
@@ -27,23 +28,38 @@ const AddAddressScreen = ({ route, navigation }: any) => {
     address: "",
   });
 
-  // 🔹 Lấy địa chỉ cũ (Logic giữ nguyên)
+  // 🔹 Lấy thông tin user và địa chỉ
   useEffect(() => {
-    const fetchAddress = async () => {
+    const fetchUserAndAddress = async () => {
       try {
-        const docRef = doc(db, "addresses", userId);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
+        // Lấy thông tin user từ Firestore
+        const userRef = doc(db, "users", userId);
+        const userSnap = await getDoc(userRef);
+        
+        // Lấy địa chỉ từ Firestore (nếu có)
+        const addressRef = doc(db, "addresses", userId);
+        const addressSnap = await getDoc(addressRef);
+        
+        if (addressSnap.exists()) {
+          // Nếu đã có địa chỉ, lấy toàn bộ thông tin đã lưu
+          const data = addressSnap.data();
           setName(data.name || "");
           setPhone(data.phone || "");
           setAddress(data.address || "");
+          setIsNewAddress(false);
+        } else if (userSnap.exists()) {
+          // Nếu chưa có địa chỉ (tài khoản mới), tự động lấy tên và SĐT từ account
+          const userData = userSnap.data();
+          setName(userData.fullname || "");
+          setPhone(userData.phoneNumber || "");
+          setAddress(""); // Địa chỉ để trống
+          setIsNewAddress(true);
         }
       } catch (err) {
-        console.error("Lỗi khi lấy địa chỉ:", err);
+        console.error("Lỗi khi lấy thông tin:", err);
       }
     };
-    fetchAddress();
+    fetchUserAndAddress();
   }, [userId]);
 
   // 🧾 Kiểm tra hợp lệ (Logic giữ nguyên)
@@ -110,6 +126,16 @@ const AddAddressScreen = ({ route, navigation }: any) => {
         
       </View>
 
+      {/* Thông báo cho tài khoản mới */}
+      {isNewAddress && (
+        <View style={styles.infoBox}>
+          <Ionicons name="information-circle" size={20} color="#924900" />
+          <Text style={styles.infoText}>
+            Tên và số điện thoại được lấy từ tài khoản của bạn. Vui lòng nhập địa chỉ giao hàng.
+          </Text>
+        </View>
+      )}
+
       {/* --- Form --- */}
       <View style={styles.formContainer}>
         {/* --- Ô nhập họ tên --- */}
@@ -125,6 +151,9 @@ const AddAddressScreen = ({ route, navigation }: any) => {
             }}
           />
           {errors.name ? <Text style={styles.errorText}>{errors.name}</Text> : null}
+          {!errors.name && name && (
+            <Text style={styles.hintText}>Tên người nhận hàng</Text>
+          )}
         </View>
 
         {/* --- Ô nhập số điện thoại --- */}
@@ -141,14 +170,17 @@ const AddAddressScreen = ({ route, navigation }: any) => {
             }}
           />
           {errors.phone ? <Text style={styles.errorText}>{errors.phone}</Text> : null}
+          {!errors.phone && phone && (
+            <Text style={styles.hintText}>Số điện thoại liên hệ</Text>
+          )}
         </View>
 
         {/* --- Ô nhập địa chỉ --- */}
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Địa chỉ chi tiết</Text>
+          <Text style={styles.label}>Địa chỉ chi tiết <Text style={styles.required}>*</Text></Text>
           <TextInput
             style={[styles.input, styles.textArea, errors.address ? styles.inputError : null]}
-            placeholder="Số nhà, đường, phường, quận..."
+            placeholder="Số nhà, đường, phường, quận, thành phố..."
             multiline
             numberOfLines={4}
             value={address}
@@ -158,6 +190,9 @@ const AddAddressScreen = ({ route, navigation }: any) => {
             }}
           />
           {errors.address ? <Text style={styles.errorText}>{errors.address}</Text> : null}
+          {!errors.address && !address && (
+            <Text style={styles.hintText}>Nhập địa chỉ nhận hàng đầy đủ</Text>
+          )}
         </View>
       </View>
 
@@ -208,6 +243,23 @@ const styles = StyleSheet.create({
     color: "#924900",
     textAlign: "center",
   },
+  infoBox: {
+    flexDirection: "row",
+    backgroundColor: "#FFF3E0",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 20,
+    borderLeftWidth: 4,
+    borderLeftColor: "#924900",
+    alignItems: "center",
+  },
+  infoText: {
+    flex: 1,
+    fontSize: 14,
+    color: "#924900",
+    marginLeft: 10,
+    lineHeight: 20,
+  },
   formContainer: {
     marginBottom: 20,
   },
@@ -256,6 +308,17 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     fontSize: 14,
     fontWeight: "500",
+  },
+  hintText: {
+    color: "#924900",
+    marginTop: 6,
+    marginLeft: 4,
+    fontSize: 13,
+    fontStyle: "italic",
+  },
+  required: {
+    color: "#D9534F",
+    fontSize: 16,
   },
   saveButton: {
     backgroundColor: "#924900",

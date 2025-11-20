@@ -7,13 +7,15 @@ import ProductDetailScreen from "../screens/ProductDetailScreen";
 import AddAddressScreen from "../screens/AddressScreen";
 import SearchResultScreen from "../screens/SearchResultScreen";
 import CategoryProductsScreen from "../screens/CategoryProductsScreen";
-import CheckoutScreen from "../screens/CheckoutScreen"; // ✅ Thêm import
+import CheckoutScreen from "../screens/CheckoutScreen";
+import OrdersScreen from "../screens/OrdersScreen";
+import OrderHistoryScreen from "../screens/OrderHistoryScreen";
 
 const Stack = createStackNavigator();
 
 export default function AppNavigator() {
   return (
-    <Stack.Navigator id="rootStack" screenOptions={{ headerShown: false }}>
+    <Stack.Navigator id={"rootStack"} screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MainTabs" component={TabNavigator} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="SignUp" component={SignUpScreen} />
@@ -47,6 +49,20 @@ export default function AppNavigator() {
         name="Checkout"
         component={CheckoutScreen}
         options={{ headerShown: false, title: "Xác nhận đơn hàng" }}
+      />
+
+      {/* Màn hình đơn hàng */}
+      <Stack.Screen
+        name="Orders"
+        component={OrdersScreen}
+        options={{ headerShown: false, title: "Đơn hàng" }}
+      />
+
+      {/* Màn hình lịch sử đơn hàng */}
+      <Stack.Screen
+        name="OrderHistory"
+        component={OrderHistoryScreen}
+        options={{ headerShown: false, title: "Lịch sử đơn hàng" }}
       />
     </Stack.Navigator>
   );
