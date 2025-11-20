@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
     marginLeft: 5,
   },
 
-  image: { width: "100%", height: 260, borderRadius: 10 },
+  image: { width: "100%", height: 260, borderRadius: 10, marginTop: 12, marginHorizontal: 12 },
   body: { padding: 16 },
   name: { fontSize: 22, fontWeight: "700", color: "#333" },
   price: { marginTop: 6, fontSize: 18, color: "#E58E26", fontWeight: "700" },
