@@ -129,6 +129,7 @@ export default function CheckoutScreen() {
         phone,
         items: cartItems,
         total,
+        status: "pending",
         createdAt: serverTimestamp(),
       });
 
