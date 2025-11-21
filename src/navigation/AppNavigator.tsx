@@ -122,6 +122,7 @@ export default function AppNavigator() {
         name="AdminHelp"
         component={AdminHelpScreen}
         options={{ headerShown: false, title: "Trợ giúp" }}
+      />
       {/* Màn hình AI ChatBot */}
       <Stack.Screen
         name="ChatBot"
