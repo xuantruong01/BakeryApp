@@ -16,6 +16,7 @@ import OrderDetailScreen from "../screens/OrderDetailScreen";
 import AdminNotificationsScreen from "../screens/admin/AdminNotificationsScreen";
 import AdminSettingsScreen from "../screens/admin/AdminSettingsScreen";
 import AdminHelpScreen from "../screens/admin/AdminHelpScreen";
+import ChatBotScreen from "../screens/ChatBotScreen";
 
 const Stack = createStackNavigator();
 
@@ -49,8 +50,8 @@ export default function AppNavigator() {
   const MainComponent = userRole === "admin" ? AdminTabNavigator : TabNavigator;
 
   return (
-    <Stack.Navigator id={undefined} screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="MainTabs" component={MainComponent} />
+    <Stack.Navigator id={"rootStack"} screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="MainTabs" component={TabNavigator} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="SignUp" component={SignUpScreen} />
 
@@ -121,6 +122,11 @@ export default function AppNavigator() {
         name="AdminHelp"
         component={AdminHelpScreen}
         options={{ headerShown: false, title: "Trợ giúp" }}
+      {/* Màn hình AI ChatBot */}
+      <Stack.Screen
+        name="ChatBot"
+        component={ChatBotScreen}
+        options={{ headerShown: false, title: "AI Trợ lý" }}
       />
     </Stack.Navigator>
   );
