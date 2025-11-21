@@ -7,11 +7,20 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  orderBy,
+  doc,
+  updateDoc,
+} from "firebase/firestore";
 import { db } from "../services/firebaseConfig";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -96,6 +105,59 @@ const OrdersScreen = () => {
     }
   };
 
+  // ❌ Hủy đơn hàng (chỉ khi pending)
+  const cancelOrder = async (orderId: string) => {
+    Alert.alert("Hủy đơn hàng", "Bạn có chắc chắn muốn hủy đơn hàng này?", [
+      { text: "Không", style: "cancel" },
+      {
+        text: "Hủy đơn",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            const orderRef = doc(db, "orders", orderId);
+            await updateDoc(orderRef, {
+              status: "cancelled",
+              updatedAt: new Date(),
+            });
+            Alert.alert("Thành công", "Đã hủy đơn hàng");
+            await fetchOrders();
+          } catch (error) {
+            console.error("Lỗi khi hủy đơn hàng:", error);
+            Alert.alert("Lỗi", "Không thể hủy đơn hàng. Vui lòng thử lại.");
+          }
+        },
+      },
+    ]);
+  };
+
+  // ✅ Xác nhận đã nhận hàng (processing → completed)
+  const confirmReceived = async (orderId: string) => {
+    Alert.alert(
+      "Xác nhận nhận hàng",
+      "Bạn đã nhận được hàng và hài lòng với đơn hàng này?",
+      [
+        { text: "Chưa", style: "cancel" },
+        {
+          text: "Đã nhận",
+          onPress: async () => {
+            try {
+              const orderRef = doc(db, "orders", orderId);
+              await updateDoc(orderRef, {
+                status: "completed",
+                updatedAt: new Date(),
+              });
+              Alert.alert("Cảm ơn bạn!", "Đơn hàng đã hoàn thành");
+              await fetchOrders();
+            } catch (error) {
+              console.error("Lỗi khi xác nhận nhận hàng:", error);
+              Alert.alert("Lỗi", "Không thể cập nhật. Vui lòng thử lại.");
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (loading) {
     return (
       <View style={styles.center}>
@@ -105,7 +167,10 @@ const OrdersScreen = () => {
   }
 
   return (
-    <LinearGradient colors={["#FFF5E6", "#FFE8CC", "#FFFFFF"]} style={styles.container}>
+    <LinearGradient
+      colors={["#FFF5E6", "#FFE8CC", "#FFFFFF"]}
+      style={styles.container}
+    >
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -122,7 +187,11 @@ const OrdersScreen = () => {
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#924900"]} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#924900"]}
+          />
         }
       >
         {orders.length === 0 ? (
@@ -140,11 +209,19 @@ const OrdersScreen = () => {
                 key={order.id}
                 style={styles.orderCard}
                 activeOpacity={0.7}
-                onPress={() => (navigation as any).navigate("OrderDetail", { orderId: order.id })}
+                onPress={() =>
+                  (navigation as any).navigate("OrderDetail", {
+                    orderId: order.id,
+                  })
+                }
               >
                 <View style={styles.orderHeader}>
                   <View style={styles.orderIdContainer}>
-                    <Ionicons name="receipt-outline" size={20} color="#924900" />
+                    <Ionicons
+                      name="receipt-outline"
+                      size={20}
+                      color="#924900"
+                    />
                     <Text style={styles.orderId}>#{order.id.slice(0, 8)}</Text>
                   </View>
                   <View
@@ -153,7 +230,9 @@ const OrdersScreen = () => {
                       { backgroundColor: getStatusColor(order.status) },
                     ]}
                   >
-                    <Text style={styles.statusText}>{getStatusText(order.status)}</Text>
+                    <Text style={styles.statusText}>
+                      {getStatusText(order.status)}
+                    </Text>
                   </View>
                 </View>
 
@@ -163,14 +242,18 @@ const OrdersScreen = () => {
                   <View style={styles.orderRow}>
                     <Ionicons name="calendar-outline" size={18} color="#666" />
                     <Text style={styles.orderLabel}>Ngày đặt:</Text>
-                    <Text style={styles.orderValue}>{formatDate(order.createdAt)}</Text>
+                    <Text style={styles.orderValue}>
+                      {formatDate(order.createdAt)}
+                    </Text>
                   </View>
 
                   {order.items && order.items.length > 0 && (
                     <View style={styles.orderRow}>
                       <Ionicons name="basket-outline" size={18} color="#666" />
                       <Text style={styles.orderLabel}>Số sản phẩm:</Text>
-                      <Text style={styles.orderValue}>{order.items.length} món</Text>
+                      <Text style={styles.orderValue}>
+                        {order.items.length} món
+                      </Text>
                     </View>
                   )}
 
@@ -193,7 +276,9 @@ const OrdersScreen = () => {
                         <Text style={styles.itemName} numberOfLines={1}>
                           • {item.name || "Sản phẩm"}
                         </Text>
-                        <Text style={styles.itemQuantity}>x{item.quantity || 1}</Text>
+                        <Text style={styles.itemQuantity}>
+                          x{item.quantity || 1}
+                        </Text>
                       </View>
                     ))}
                     {order.items.length > 3 && (
@@ -203,6 +288,32 @@ const OrdersScreen = () => {
                     )}
                   </View>
                 )}
+
+                {/* Nút hành động theo trạng thái */}
+                <View style={styles.actionButtons}>
+                  {order.status === "pending" && (
+                    <TouchableOpacity
+                      style={styles.cancelButton}
+                      onPress={() => cancelOrder(order.id)}
+                    >
+                      <Ionicons name="close-circle" size={18} color="#fff" />
+                      <Text style={styles.cancelText}>Hủy đơn hàng</Text>
+                    </TouchableOpacity>
+                  )}
+                  {order.status === "processing" && (
+                    <TouchableOpacity
+                      style={styles.confirmButton}
+                      onPress={() => confirmReceived(order.id)}
+                    >
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={18}
+                        color="#fff"
+                      />
+                      <Text style={styles.confirmText}>Đã nhận hàng</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </TouchableOpacity>
             ))}
           </View>
@@ -374,5 +485,39 @@ const styles = StyleSheet.create({
     color: "#924900",
     fontStyle: "italic",
     marginTop: 4,
+  },
+  actionButtons: {
+    marginTop: 10,
+    gap: 10,
+  },
+  confirmButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    backgroundColor: "#4CAF50",
+  },
+  confirmText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#fff",
+    marginLeft: 8,
+  },
+  cancelButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    backgroundColor: "#F44336",
+  },
+  cancelText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#fff",
+    marginLeft: 8,
   },
 });
