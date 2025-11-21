@@ -29,7 +29,7 @@ const SignUpScreen = ({ navigation }) => {
   const [showRePass, setShowRePass] = useState(false);
 
   // State lưu lỗi từng trường
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<{[key: string]: string | null}>({});
 
   // Hàm kiểm tra rỗng từng trường khi blur
   const handleBlur = (field, value) => {
