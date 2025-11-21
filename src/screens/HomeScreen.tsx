@@ -493,6 +493,27 @@ const HomeScreen = () => {
           </ScrollView>
         )}
       </View>
+
+      {/* AI ChatBot Floating Button */}
+      <TouchableOpacity
+        style={styles.aiFloatingButton}
+        onPress={() => {
+          const parentNav = (navigation as any).getParent?.();
+          if (parentNav) {
+            parentNav.navigate("ChatBot");
+          } else {
+            (navigation as any).navigate("ChatBot");
+          }
+        }}
+        activeOpacity={0.8}
+      >
+        <View style={styles.aiButtonGradient}>
+          <Ionicons name="sparkles" size={28} color="#FFF" />
+        </View>
+        <View style={styles.aiBadge}>
+          <Text style={styles.aiBadgeText}>AI</Text>
+        </View>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 };
@@ -678,5 +699,44 @@ const styles = StyleSheet.create({
   progressBarFill: {
     height: "100%",
     backgroundColor: "#C06000",
+  },
+
+  // AI Floating Button
+  aiFloatingButton: {
+    position: "absolute",
+    bottom: 90,
+    right: 20,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    shadowColor: "#924900",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  aiButtonGradient: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#924900",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  aiBadge: {
+    position: "absolute",
+    top: -5,
+    right: -5,
+    backgroundColor: "#FF4444",
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderWidth: 2,
+    borderColor: "#FFF",
+  },
+  aiBadgeText: {
+    color: "#FFF",
+    fontSize: 10,
+    fontWeight: "bold",
   },
 });

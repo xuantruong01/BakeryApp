@@ -11,12 +11,13 @@ import CheckoutScreen from "../screens/CheckoutScreen";
 import OrdersScreen from "../screens/OrdersScreen";
 import OrderHistoryScreen from "../screens/OrderHistoryScreen";
 import OrderDetailScreen from "../screens/OrderDetailScreen";
+import ChatBotScreen from "../screens/ChatBotScreen";
 
 const Stack = createStackNavigator();
 
 export default function AppNavigator() {
   return (
-    <Stack.Navigator id={undefined} screenOptions={{ headerShown: false }}>
+    <Stack.Navigator id={"rootStack"} screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MainTabs" component={TabNavigator} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="SignUp" component={SignUpScreen} />
@@ -71,6 +72,13 @@ export default function AppNavigator() {
         name="OrderDetail"
         component={OrderDetailScreen}
         options={{ headerShown: false, title: "Chi tiết đơn hàng" }}
+      />
+
+      {/* Màn hình AI ChatBot */}
+      <Stack.Screen
+        name="ChatBot"
+        component={ChatBotScreen}
+        options={{ headerShown: false, title: "AI Trợ lý" }}
       />
     </Stack.Navigator>
   );
