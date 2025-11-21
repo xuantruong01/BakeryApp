@@ -12,8 +12,12 @@ import {
   ScrollView,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
-import { auth } from "../services/firebaseConfig";
+import {
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+} from "firebase/auth";
+import { auth, db } from "../services/firebaseConfig";
+import { doc, getDoc } from "firebase/firestore";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -24,7 +28,7 @@ const LoginScreen = ({ navigation }) => {
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({ email: "", password: "" });
-  
+
   // State cho modal quên mật khẩu
   const [forgotModalVisible, setForgotModalVisible] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
@@ -62,15 +66,55 @@ const LoginScreen = ({ navigation }) => {
 
       const user = userCredential.user;
 
+      // Kiểm tra role từ Firestore
+      let userRole = "user";
+      try {
+        const userDocRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          // Kiểm tra xem có field role không, nếu không có thì kiểm tra email
+          if (userData.role) {
+            userRole = userData.role;
+          } else if (userData.email === "admin@gmail.com") {
+            userRole = "admin";
+          }
+        } else {
+          // Nếu không tìm thấy trong Firestore, kiểm tra email
+          if (email === "admin@gmail.com") {
+            userRole = "admin";
+          }
+        }
+      } catch (error) {
+        console.error("Error checking user role:", error);
+        // Fallback: kiểm tra email
+        if (email === "admin@gmail.com") {
+          userRole = "admin";
+        }
+      }
+
       await AsyncStorage.setItem(
         "user",
         JSON.stringify({ uid: user.uid, email: user.email })
       );
+      await AsyncStorage.setItem("userRole", userRole);
 
-      Alert.alert("✅ Thành công", "Đăng nhập thành công!");
+      // Đợi một chút để AsyncStorage lưu xong
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
-      const redirectTo = (route.params as any)?.redirectTo || "MainTabs";
-      navigation.navigate("MainTabs", { screen: redirectTo });
+      Alert.alert(
+        "✅ Thành công",
+        `Đăng nhập thành công${
+          userRole === "admin" ? " với tư cách Admin" : ""
+        }!`
+      );
+
+      // Reset về MainTabs, AppNavigator sẽ tự động render đúng component dựa vào role
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "MainTabs" }],
+      });
     } catch (error) {
       Alert.alert("❌ Lỗi", "Sai email hoặc mật khẩu!");
     } finally {
@@ -121,21 +165,21 @@ const LoginScreen = ({ navigation }) => {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={{ flex: 1 }} 
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <LinearGradient
         colors={["#FFF5E6", "#FFE8CC", "#FFFFFF"]}
         style={styles.container}
       >
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
           {/* Nút back */}
-          <TouchableOpacity 
-            style={styles.backButton} 
+          <TouchableOpacity
+            style={styles.backButton}
             onPress={() => navigation.navigate("MainTabs")}
           >
             <Ionicons name="arrow-back" size={28} color="#924900" />
@@ -154,7 +198,12 @@ const LoginScreen = ({ navigation }) => {
           {/* Email */}
           <View style={styles.inputWrapper}>
             <View style={styles.inputContainer}>
-              <Ionicons name="mail-outline" size={22} color="#924900" style={styles.inputIcon} />
+              <Ionicons
+                name="mail-outline"
+                size={22}
+                color="#924900"
+                style={styles.inputIcon}
+              />
               <TextInput
                 style={[styles.input, errors.email ? styles.inputError : null]}
                 placeholder="Nhập email của bạn"
@@ -172,15 +221,25 @@ const LoginScreen = ({ navigation }) => {
                 }}
               />
             </View>
-            {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
+            {errors.email ? (
+              <Text style={styles.errorText}>{errors.email}</Text>
+            ) : null}
           </View>
 
           {/* Password */}
           <View style={styles.inputWrapper}>
             <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={22} color="#924900" style={styles.inputIcon} />
+              <Ionicons
+                name="lock-closed-outline"
+                size={22}
+                color="#924900"
+                style={styles.inputIcon}
+              />
               <TextInput
-                style={[styles.input, errors.password ? styles.inputError : null]}
+                style={[
+                  styles.input,
+                  errors.password ? styles.inputError : null,
+                ]}
                 placeholder="Nhập mật khẩu"
                 placeholderTextColor="#999"
                 value={password}
@@ -191,10 +250,13 @@ const LoginScreen = ({ navigation }) => {
                 }}
                 onBlur={() => {
                   if (!password.trim())
-                    setErrors((e) => ({ ...e, password: "Vui lòng nhập mật khẩu" }));
+                    setErrors((e) => ({
+                      ...e,
+                      password: "Vui lòng nhập mật khẩu",
+                    }));
                 }}
               />
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => setShowPass(!showPass)}
                 style={styles.eyeIcon}
               >
@@ -205,7 +267,9 @@ const LoginScreen = ({ navigation }) => {
                 />
               </TouchableOpacity>
             </View>
-            {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
+            {errors.password ? (
+              <Text style={styles.errorText}>{errors.password}</Text>
+            ) : null}
           </View>
 
           <TouchableOpacity onPress={() => setForgotModalVisible(true)}>
@@ -275,7 +339,12 @@ const LoginScreen = ({ navigation }) => {
               </Text>
 
               <View style={styles.modalInputContainer}>
-                <Ionicons name="mail-outline" size={22} color="#924900" style={styles.inputIcon} />
+                <Ionicons
+                  name="mail-outline"
+                  size={22}
+                  color="#924900"
+                  style={styles.inputIcon}
+                />
                 <TextInput
                   style={styles.modalInput}
                   placeholder="Nhập email của bạn"
@@ -314,7 +383,7 @@ const LoginScreen = ({ navigation }) => {
 export default LoginScreen;
 
 const styles = StyleSheet.create({
-  container: { 
+  container: {
     flex: 1,
   },
   scrollContent: {
@@ -351,8 +420,8 @@ const styles = StyleSheet.create({
     color: "#666",
     marginBottom: 30,
   },
-  inputWrapper: { 
-    width: "100%", 
+  inputWrapper: {
+    width: "100%",
     marginBottom: 16,
   },
   inputContainer: {

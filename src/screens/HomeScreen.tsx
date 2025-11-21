@@ -19,7 +19,11 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { useNavigation, useRoute, useFocusEffect } from "@react-navigation/native";
+import {
+  useNavigation,
+  useRoute,
+  useFocusEffect,
+} from "@react-navigation/native";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../services/firebaseConfig";
 import ProductCard from "../components/ProductCard";
@@ -302,6 +306,28 @@ const HomeScreen = () => {
                 )}
               </View>
 
+          {/* Gợi ý món hot */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>🔥 Gợi ý cho bạn</Text>
+            <View style={styles.gridWrap}>
+              {hotProducts.map((item) => (
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.hotItem}
+                  onPress={() =>
+                    navigation.navigate("ProductDetail" as any, {
+                      product: item,
+                    })
+                  }
+                >
+                  <Image
+                    source={{
+                      uri: item.imageUrl || "https://via.placeholder.com/100",
+                    }}
+                    style={styles.hotImage}
+                  />
+                  <Text numberOfLines={2} style={styles.hotName}>
+                    {item.name}
               <View style={styles.card}>
                 {history.length === 0 ? (
                   <Text style={{ color: "#8C7A5A" }}>
@@ -326,6 +352,32 @@ const HomeScreen = () => {
                 )}
               </View>
             </View>
+          </View>
+        </ScrollView>
+      ) : (
+        /* ============ TRANG HOME GỐC (giữ nguyên như trước) ============ */
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {/* Banner: lấy 5 sản phẩm đầu làm banner */}
+          <BannerCarousel
+            data={hotProducts.slice(0, 5)}
+            onPressItem={() => {}}
+          />
+
+          {/* Danh mục (2 hàng × 4, lướt theo trang) */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>🎂 Danh mục nổi bật</Text>
+
+            <FlatList
+              data={pages}
+              keyExtractor={(_, index) => `page-${index}`}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              pagingEnabled
+              snapToInterval={width}
+              decelerationRate="fast"
+              renderItem={({ item }) => (
+                <View style={styles.categoryPage}>
+                  {item.map((cat) => (
 
             {/* Gợi ý món hot */}
             <View style={styles.section}>
@@ -347,6 +399,7 @@ const HomeScreen = () => {
                       <Image
                         source={{
                           uri:
+                            cat.imageUrl || "https://via.placeholder.com/100",
                             item.imageUrl ||
                             "https://via.placeholder.com/100",
                         }}
@@ -387,6 +440,20 @@ const HomeScreen = () => {
                 <Text style={styles.sectionTitle}>🎂 Danh mục nổi bật</Text>
               </View>
 
+          {/* Món hot trong tuần (5 sp đầu) */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>🔥 Món hot trong tuần</Text>
+            <FlatList
+              data={hotProducts.slice(0, 5)}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <ProductCard
+                  item={item}
+                  onPress={() =>
+                    navigation.navigate("ProductDetail" as any, {
+                      product: item,
+                    })
+                  }
               <View style={styles.card}>
                 <FlatList
                   ref={categoryFlatListRef}
