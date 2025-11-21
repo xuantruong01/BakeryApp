@@ -8,6 +8,7 @@ import {
   FlatList,
   TouchableOpacity,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { collection, getDocs, query, where } from "firebase/firestore";
@@ -53,7 +54,7 @@ export default function CategoryProductsScreen() {
   }, [categoryId]);
 
   return (
-    <View style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
       {/* ----- Header ----- */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -95,7 +96,7 @@ export default function CategoryProductsScreen() {
           )}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -106,14 +107,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
   },
   backBtn: { marginRight: 8 },
   title: {
     flex: 1,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "700",
     color: "#333",
   },
