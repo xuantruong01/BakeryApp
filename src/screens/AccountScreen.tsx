@@ -63,9 +63,16 @@ const AccountScreen = () => {
   // 🚪 Đăng xuất
   const handleLogout = async () => {
     await AsyncStorage.removeItem("user");
+    await AsyncStorage.removeItem("userRole");
     setUser(null);
     setAddress(null);
     setConfirmVisible(false);
+
+    // Reset navigation để reload AppNavigator
+    (navigation as any).reset({
+      index: 0,
+      routes: [{ name: "MainTabs" }],
+    });
   };
 
   // ⏳ Đang tải dữ liệu
@@ -83,7 +90,7 @@ const AccountScreen = () => {
       colors={["#FFF5E6", "#FFE8CC", "#FFFFFF"]}
       style={styles.container}
     >
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
@@ -115,13 +122,17 @@ const AccountScreen = () => {
                 <View style={styles.infoRow}>
                   <Ionicons name="mail" size={20} color="#924900" />
                   <Text style={styles.infoLabel}>Email:</Text>
-                  <Text style={styles.infoValue}>{user.email || "Chưa có"}</Text>
+                  <Text style={styles.infoValue}>
+                    {user.email || "Chưa có"}
+                  </Text>
                 </View>
                 <View style={styles.infoDivider} />
                 <View style={styles.infoRow}>
                   <Ionicons name="call" size={20} color="#924900" />
                   <Text style={styles.infoLabel}>Số điện thoại:</Text>
-                  <Text style={styles.infoValue}>{user.phoneNumber || "Chưa có"}</Text>
+                  <Text style={styles.infoValue}>
+                    {user.phoneNumber || "Chưa có"}
+                  </Text>
                 </View>
               </View>
             </View>
@@ -135,21 +146,33 @@ const AccountScreen = () => {
               {!address ? (
                 <TouchableOpacity
                   style={styles.addAddressCard}
-                  onPress={() => (navigation as any).navigate("AddAddress", { userId: user.uid })}
+                  onPress={() =>
+                    (navigation as any).navigate("AddAddress", {
+                      userId: user.uid,
+                    })
+                  }
                 >
                   <Ionicons name="add-circle" size={40} color="#924900" />
-                  <Text style={styles.addAddressText}>Thêm địa chỉ giao hàng</Text>
+                  <Text style={styles.addAddressText}>
+                    Thêm địa chỉ giao hàng
+                  </Text>
                 </TouchableOpacity>
               ) : (
                 <View style={styles.addressCard}>
                   <View style={styles.addressInfo}>
                     <Text style={styles.addressName}>{address.name}</Text>
                     <Text style={styles.addressDetail}>📞 {address.phone}</Text>
-                    <Text style={styles.addressDetail}>📍 {address.address}</Text>
+                    <Text style={styles.addressDetail}>
+                      📍 {address.address}
+                    </Text>
                   </View>
                   <TouchableOpacity
                     style={styles.editAddressBtn}
-                    onPress={() => (navigation as any).navigate("AddAddress", { userId: user.uid })}
+                    onPress={() =>
+                      (navigation as any).navigate("AddAddress", {
+                        userId: user.uid,
+                      })
+                    }
                   >
                     <Ionicons name="create" size={20} color="#fff" />
                   </TouchableOpacity>
@@ -223,11 +246,15 @@ const AccountScreen = () => {
               <Ionicons name="person-outline" size={80} color="#924900" />
             </View>
             <Text style={styles.notLoggedText}>Bạn chưa đăng nhập</Text>
-            <Text style={styles.notLoggedSubtext}>Đăng nhập để trải nghiệm đầy đủ tính năng</Text>
+            <Text style={styles.notLoggedSubtext}>
+              Đăng nhập để trải nghiệm đầy đủ tính năng
+            </Text>
 
             <TouchableOpacity
               style={styles.loginButton}
-              onPress={() => (navigation as any).navigate("Login", { redirectTo: "Account" })}
+              onPress={() =>
+                (navigation as any).navigate("Login", { redirectTo: "Account" })
+              }
             >
               <LinearGradient
                 colors={["#C06000", "#924900", "#6B3600"]}
@@ -241,7 +268,11 @@ const AccountScreen = () => {
 
             <TouchableOpacity
               style={styles.signupButton}
-              onPress={() => (navigation as any).navigate("SignUp", { redirectTo: "Account" })}
+              onPress={() =>
+                (navigation as any).navigate("SignUp", {
+                  redirectTo: "Account",
+                })
+              }
             >
               <Text style={styles.signupButtonText}>Đăng ký tài khoản</Text>
             </TouchableOpacity>
@@ -300,13 +331,13 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  center: { 
-    flex: 1, 
-    justifyContent: "center", 
+  center: {
+    flex: 1,
+    justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#FFF5E6",
   },
-  
+
   // Header Profile
   header: {
     alignItems: "center",
@@ -691,21 +722,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginHorizontal: 6,
   },
-  cancelButton: { 
+  cancelButton: {
     backgroundColor: "#F5F5F5",
     borderWidth: 1,
     borderColor: "#E0E0E0",
   },
-  logoutConfirmButton: { 
+  logoutConfirmButton: {
     backgroundColor: "#924900",
   },
-  cancelText: { 
-    color: "#924900", 
+  cancelText: {
+    color: "#924900",
     fontWeight: "600",
     fontSize: 16,
   },
-  logoutConfirmText: { 
-    color: "#fff", 
+  logoutConfirmText: {
+    color: "#fff",
     fontWeight: "600",
     fontSize: 16,
   },

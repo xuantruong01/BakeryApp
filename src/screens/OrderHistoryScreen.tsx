@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
@@ -107,6 +108,31 @@ const OrderHistoryScreen = () => {
     }
   };
 
+  const handleReorder = async (order: any) => {
+    try {
+      const storedUser = await AsyncStorage.getItem("user");
+      if (!storedUser) return;
+      const parsedUser = JSON.parse(storedUser);
+      // Tạo dữ liệu đơn hàng mới
+      const newOrder = {
+        userId: parsedUser.uid,
+        customerName: order.customerName,
+        customerPhone: order.customerPhone,
+        deliveryAddress: order.deliveryAddress,
+        items: order.items,
+        total: order.total,
+        status: "pending",
+        paymentMethod: order.paymentMethod || "cash",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      // Chuyển sang màn hình thanh toán với dữ liệu mới
+      navigation.navigate("Checkout", { reorderData: newOrder });
+    } catch (error) {
+      Alert.alert("Lỗi", "Không thể tạo lại đơn hàng");
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.center}>
@@ -116,7 +142,10 @@ const OrderHistoryScreen = () => {
   }
 
   return (
-    <LinearGradient colors={["#FFF5E6", "#FFE8CC", "#FFFFFF"]} style={styles.container}>
+    <LinearGradient
+      colors={["#FFF5E6", "#FFE8CC", "#FFFFFF"]}
+      style={styles.container}
+    >
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -133,7 +162,11 @@ const OrderHistoryScreen = () => {
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#924900"]} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#924900"]}
+          />
         }
       >
         {orders.length === 0 ? (
@@ -151,7 +184,11 @@ const OrderHistoryScreen = () => {
                 key={order.id}
                 style={styles.orderCard}
                 activeOpacity={0.7}
-                onPress={() => (navigation as any).navigate("OrderDetail", { orderId: order.id })}
+                onPress={() =>
+                  (navigation as any).navigate("OrderDetail", {
+                    orderId: order.id,
+                  })
+                }
               >
                 <View style={styles.orderHeader}>
                   <View style={styles.orderIdContainer}>
@@ -168,7 +205,9 @@ const OrderHistoryScreen = () => {
                       { backgroundColor: getStatusColor(order.status) },
                     ]}
                   >
-                    <Text style={styles.statusText}>{getStatusText(order.status)}</Text>
+                    <Text style={styles.statusText}>
+                      {getStatusText(order.status)}
+                    </Text>
                   </View>
                 </View>
 
@@ -178,14 +217,18 @@ const OrderHistoryScreen = () => {
                   <View style={styles.orderRow}>
                     <Ionicons name="calendar-outline" size={18} color="#666" />
                     <Text style={styles.orderLabel}>Ngày đặt:</Text>
-                    <Text style={styles.orderValue}>{formatDate(order.createdAt)}</Text>
+                    <Text style={styles.orderValue}>
+                      {formatDate(order.createdAt)}
+                    </Text>
                   </View>
 
                   {order.items && order.items.length > 0 && (
                     <View style={styles.orderRow}>
                       <Ionicons name="basket-outline" size={18} color="#666" />
                       <Text style={styles.orderLabel}>Số sản phẩm:</Text>
-                      <Text style={styles.orderValue}>{order.items.length} món</Text>
+                      <Text style={styles.orderValue}>
+                        {order.items.length} món
+                      </Text>
                     </View>
                   )}
 
@@ -213,7 +256,9 @@ const OrderHistoryScreen = () => {
                         <Text style={styles.itemName} numberOfLines={1}>
                           • {item.name || "Sản phẩm"}
                         </Text>
-                        <Text style={styles.itemQuantity}>x{item.quantity || 1}</Text>
+                        <Text style={styles.itemQuantity}>
+                          x{item.quantity || 1}
+                        </Text>
                       </View>
                     ))}
                     {order.items.length > 3 && (
@@ -226,8 +271,15 @@ const OrderHistoryScreen = () => {
 
                 {/* Nút mua lại cho đơn hoàn thành */}
                 {order.status === "completed" && (
-                  <TouchableOpacity style={styles.reorderButton}>
-                    <Ionicons name="refresh-outline" size={18} color="#924900" />
+                  <TouchableOpacity
+                    style={styles.reorderButton}
+                    onPress={() => handleReorder(order)}
+                  >
+                    <Ionicons
+                      name="refresh-outline"
+                      size={18}
+                      color="#924900"
+                    />
                     <Text style={styles.reorderText}>Mua lại</Text>
                   </TouchableOpacity>
                 )}

@@ -15,15 +15,19 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { useNavigation, useRoute, useFocusEffect } from "@react-navigation/native";
+import {
+  useNavigation,
+  useRoute,
+  useFocusEffect,
+} from "@react-navigation/native";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../services/firebaseConfig";
 import ProductCard from "../components/ProductCard";
 import BannerCarousel from "../components/BannerCarousel";
 
 const { width } = Dimensions.get("window");
-const ITEM_SIZE = (width - 60) / 4;         // 4 cột / hàng
-const MAX_ITEMS_PER_PAGE = 8;               // 2 hàng × 4 cột
+const ITEM_SIZE = (width - 60) / 4; // 4 cột / hàng
+const MAX_ITEMS_PER_PAGE = 8; // 2 hàng × 4 cột
 
 type Category = { categoryId: string; name: string; imageUrl?: string };
 
@@ -108,11 +112,10 @@ const HomeScreen = () => {
         return false;
       };
       const subscription = BackHandler.addEventListener(
-  "hardwareBackPress",
-  onBackPress
-);
-return () => subscription.remove();
-
+        "hardwareBackPress",
+        onBackPress
+      );
+      return () => subscription.remove();
     }, [searchMode])
   );
 
@@ -137,9 +140,10 @@ return () => subscription.remove();
     await saveHistory(search);
 
     const q = normalizeVN(search);
-    const results = products.filter((p) =>
-      normalizeVN(p?.name || "").includes(q) ||
-      normalizeVN(p?.description || "").includes(q)
+    const results = products.filter(
+      (p) =>
+        normalizeVN(p?.name || "").includes(q) ||
+        normalizeVN(p?.description || "").includes(q)
     );
 
     navigation.navigate("SearchResult", { term: search, results });
@@ -171,7 +175,12 @@ return () => subscription.remove();
             <Ionicons name="arrow-back" size={22} color="#333" />
           </TouchableOpacity>
         ) : (
-          <Ionicons name="search" size={22} color="#999" style={styles.iconLeft} />
+          <Ionicons
+            name="search"
+            size={22}
+            color="#999"
+            style={styles.iconLeft}
+          />
         )}
 
         <TextInput
@@ -241,15 +250,15 @@ return () => subscription.remove();
                   key={item.id}
                   style={styles.hotItem}
                   onPress={() =>
-                    (navigation.getParent("rootStack") ??
-                      navigation.getParent()?.getParent())?.navigate(
-                      "ProductDetail",
-                      { product: item }
-                    )
+                    navigation.navigate("ProductDetail" as any, {
+                      product: item,
+                    })
                   }
                 >
                   <Image
-                    source={{ uri: item.imageUrl || "https://via.placeholder.com/100" }}
+                    source={{
+                      uri: item.imageUrl || "https://via.placeholder.com/100",
+                    }}
                     style={styles.hotImage}
                   />
                   <Text numberOfLines={2} style={styles.hotName}>
@@ -264,7 +273,10 @@ return () => subscription.remove();
         /* ============ TRANG HOME GỐC (giữ nguyên như trước) ============ */
         <ScrollView showsVerticalScrollIndicator={false}>
           {/* Banner: lấy 5 sản phẩm đầu làm banner */}
-          <BannerCarousel data={hotProducts.slice(0, 5)} onPressItem={() => {}} />
+          <BannerCarousel
+            data={hotProducts.slice(0, 5)}
+            onPressItem={() => {}}
+          />
 
           {/* Danh mục (2 hàng × 4, lướt theo trang) */}
           <View style={styles.section}>
@@ -286,16 +298,16 @@ return () => subscription.remove();
                       activeOpacity={0.8}
                       style={styles.categoryItem}
                       onPress={() =>
-                        (navigation.getParent("rootStack") ??
-                          navigation.getParent()?.getParent())?.navigate(
-                          "CategoryProducts",
-                          { categoryId: cat.categoryId, categoryName: cat.name }
-                        )
+                        navigation.navigate("CategoryProducts" as any, {
+                          categoryId: cat.categoryId,
+                          categoryName: cat.name,
+                        })
                       }
                     >
                       <Image
                         source={{
-                          uri: cat.imageUrl || "https://via.placeholder.com/100",
+                          uri:
+                            cat.imageUrl || "https://via.placeholder.com/100",
                         }}
                         style={styles.categoryImage}
                       />
@@ -319,11 +331,9 @@ return () => subscription.remove();
                 <ProductCard
                   item={item}
                   onPress={() =>
-                    (navigation.getParent("rootStack") ??
-                      navigation.getParent()?.getParent())?.navigate(
-                      "ProductDetail",
-                      { product: item }
-                    )
+                    navigation.navigate("ProductDetail" as any, {
+                      product: item,
+                    })
                   }
                 />
               )}

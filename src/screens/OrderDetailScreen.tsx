@@ -10,9 +10,10 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRoute, useNavigation } from "@react-navigation/native";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../services/firebaseConfig";
 import { LinearGradient } from "expo-linear-gradient";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const OrderDetailScreen = () => {
   const route = useRoute();
@@ -21,10 +22,19 @@ const OrderDetailScreen = () => {
 
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
     fetchOrderDetail();
   }, [orderId]);
+
+  useEffect(() => {
+    const getRole = async () => {
+      const role = await AsyncStorage.getItem("userRole");
+      setUserRole(role);
+    };
+    getRole();
+  }, []);
 
   const fetchOrderDetail = async () => {
     try {
@@ -102,6 +112,29 @@ const OrderDetailScreen = () => {
     }
   };
 
+  const handleAdminConfirm = async () => {
+    try {
+      const orderRef = doc(db, "orders", orderId);
+      await updateDoc(orderRef, {
+        status: "processing",
+        updatedAt: new Date(),
+      });
+      fetchOrderDetail();
+    } catch (error) {
+      console.error("Lỗi xác nhận đơn hàng:", error);
+    }
+  };
+
+  const handleAdminCancel = async () => {
+    try {
+      const orderRef = doc(db, "orders", orderId);
+      await updateDoc(orderRef, { status: "cancelled", updatedAt: new Date() });
+      fetchOrderDetail();
+    } catch (error) {
+      console.error("Lỗi hủy đơn hàng:", error);
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.center}>
@@ -120,17 +153,26 @@ const OrderDetailScreen = () => {
   }
 
   return (
-    <LinearGradient colors={["#FFF5E6", "#FFE8CC", "#FFFFFF"]} style={styles.container}>
+    <LinearGradient
+      colors={["#FFF5E6", "#FFE8CC", "#FFFFFF"]}
+      style={styles.container}
+    >
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
           <Ionicons name="arrow-back" size={28} color="#924900" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Chi tiết đơn hàng</Text>
         <View style={{ width: 28 }} />
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Mã đơn hàng & Trạng thái */}
         <View style={styles.card}>
           <View style={styles.orderHeaderRow}>
@@ -139,14 +181,19 @@ const OrderDetailScreen = () => {
               <Text style={styles.orderIdText}>#{order.id}</Text>
             </View>
             <View
-              style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status) }]}
+              style={[
+                styles.statusBadge,
+                { backgroundColor: getStatusColor(order.status) },
+              ]}
             >
               <Ionicons
                 name={getStatusIcon(order.status) as any}
                 size={16}
                 color="#FFF"
               />
-              <Text style={styles.statusText}>{getStatusText(order.status)}</Text>
+              <Text style={styles.statusText}>
+                {getStatusText(order.status)}
+              </Text>
             </View>
           </View>
         </View>
@@ -175,11 +222,15 @@ const OrderDetailScreen = () => {
           </View>
           <View style={styles.infoRow}>
             <Ionicons name="call-outline" size={20} color="#666" />
-            <Text style={styles.infoText}>{order.phone || "Chưa có số điện thoại"}</Text>
+            <Text style={styles.infoText}>
+              {order.phone || "Chưa có số điện thoại"}
+            </Text>
           </View>
           <View style={styles.infoRow}>
             <Ionicons name="location-outline" size={20} color="#666" />
-            <Text style={styles.infoText}>{order.address || "Chưa có địa chỉ"}</Text>
+            <Text style={styles.infoText}>
+              {order.address || "Chưa có địa chỉ"}
+            </Text>
           </View>
         </View>
 
@@ -196,7 +247,10 @@ const OrderDetailScreen = () => {
                 {/* Hình ảnh sản phẩm */}
                 <View style={styles.productImageContainer}>
                   {item.imageUrl ? (
-                    <Image source={{ uri: item.imageUrl }} style={styles.productImage} />
+                    <Image
+                      source={{ uri: item.imageUrl }}
+                      style={styles.productImage}
+                    />
                   ) : (
                     <View style={styles.noImagePlaceholder}>
                       <Ionicons name="image-outline" size={30} color="#CCC" />
@@ -209,7 +263,9 @@ const OrderDetailScreen = () => {
                   <Text style={styles.productName} numberOfLines={2}>
                     {item.name || "Sản phẩm"}
                   </Text>
-                  <Text style={styles.productQuantity}>Số lượng: x{item.quantity || 1}</Text>
+                  <Text style={styles.productQuantity}>
+                    Số lượng: x{item.quantity || 1}
+                  </Text>
                   <Text style={styles.productPrice}>
                     {formatPrice(parseInt(item.price) || 0)}
                   </Text>
@@ -218,7 +274,9 @@ const OrderDetailScreen = () => {
                 {/* Tổng giá */}
                 <View style={styles.productTotal}>
                   <Text style={styles.productTotalPrice}>
-                    {formatPrice((parseInt(item.price) || 0) * (item.quantity || 1))}
+                    {formatPrice(
+                      (parseInt(item.price) || 0) * (item.quantity || 1)
+                    )}
                   </Text>
                 </View>
               </View>
@@ -233,7 +291,9 @@ const OrderDetailScreen = () => {
           <View style={styles.totalContainer}>
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Tạm tính:</Text>
-              <Text style={styles.totalValue}>{formatPrice(order.total || 0)}</Text>
+              <Text style={styles.totalValue}>
+                {formatPrice(order.total || 0)}
+              </Text>
             </View>
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Phí vận chuyển:</Text>
@@ -242,10 +302,161 @@ const OrderDetailScreen = () => {
             <View style={styles.divider} />
             <View style={styles.totalRow}>
               <Text style={styles.grandTotalLabel}>Tổng cộng:</Text>
-              <Text style={styles.grandTotalValue}>{formatPrice(order.total || 0)}</Text>
+              <Text style={styles.grandTotalValue}>
+                {formatPrice(order.total || 0)}
+              </Text>
             </View>
           </View>
         </View>
+
+        {/* Thông tin thanh toán */}
+        <View style={styles.card}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="card-outline" size={24} color="#924900" />
+            <Text style={styles.sectionTitle}>Phương thức thanh toán</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Ionicons
+              name={
+                order.paymentMethod === "cash" ? "cash-outline" : "card-outline"
+              }
+              size={20}
+              color="#666"
+            />
+            <Text style={styles.infoText}>
+              {order.paymentMethod === "cash"
+                ? "Tiền mặt khi nhận hàng"
+                : "Chuyển khoản ngân hàng"}
+            </Text>
+          </View>
+
+          {/* Hiển thị thông tin ngân hàng nếu thanh toán bằng chuyển khoản */}
+          {order.paymentMethod === "bank" && order.bankInfo && (
+            <View style={styles.bankInfoContainer}>
+              <View style={styles.bankInfoRow}>
+                <Text style={styles.bankInfoLabel}>Ngân hàng:</Text>
+                <Text style={styles.bankInfoValue}>
+                  {order.bankInfo.bankName}
+                </Text>
+              </View>
+              <View style={styles.bankInfoRow}>
+                <Text style={styles.bankInfoLabel}>Số tài khoản:</Text>
+                <Text style={styles.bankInfoValue}>
+                  {order.bankInfo.accountNumber}
+                </Text>
+              </View>
+              <View style={styles.bankInfoRow}>
+                <Text style={styles.bankInfoLabel}>Chủ tài khoản:</Text>
+                <Text style={styles.bankInfoValue}>
+                  {order.bankInfo.accountOwner}
+                </Text>
+              </View>
+              <View style={styles.bankInfoRow}>
+                <Text style={styles.bankInfoLabel}>Số tiền:</Text>
+                <Text
+                  style={[
+                    styles.bankInfoValue,
+                    { color: "#E58E26", fontWeight: "bold" },
+                  ]}
+                >
+                  {formatPrice(order.total || 0)}
+                </Text>
+              </View>
+
+              {/* Hiển thị ảnh xác nhận chuyển khoản nếu có */}
+              {order.paymentProof && (
+                <View style={{ alignItems: "center", marginTop: 16 }}>
+                  <Text
+                    style={{ fontSize: 15, fontWeight: "600", marginBottom: 8 }}
+                  >
+                    Ảnh xác nhận chuyển khoản:
+                  </Text>
+                  <Image
+                    source={{
+                      uri: order.paymentProof.startsWith("data:")
+                        ? order.paymentProof
+                        : `data:image/jpeg;base64,${order.paymentProof}`,
+                    }}
+                    style={{
+                      width: 200,
+                      height: 200,
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      borderColor: "#E58E26",
+                    }}
+                    resizeMode="contain"
+                  />
+                </View>
+              )}
+
+              {/* Thông báo cho admin */}
+              {userRole === "admin" && order.status === "pending" && (
+                <View style={styles.adminNote}>
+                  <Ionicons
+                    name="information-circle"
+                    size={20}
+                    color="#2196F3"
+                  />
+                  <Text style={styles.adminNoteText}>
+                    Vui lòng kiểm tra tài khoản ngân hàng và xác nhận khi đã
+                    nhận được tiền.
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+        </View>
+
+        {/* Thêm nút cho admin nếu trạng thái là pending */}
+        {userRole === "admin" && order.status === "pending" && (
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "center",
+              marginVertical: 16,
+              gap: 12,
+            }}
+          >
+            <TouchableOpacity
+              style={{
+                backgroundColor: "#28A745",
+                padding: 14,
+                borderRadius: 8,
+                flexDirection: "row",
+                alignItems: "center",
+                flex: 1,
+                justifyContent: "center",
+              }}
+              onPress={handleAdminConfirm}
+            >
+              <Ionicons name="checkmark-circle" size={20} color="#FFF" />
+              <Text
+                style={{ color: "#FFF", fontWeight: "bold", marginLeft: 8 }}
+              >
+                Xác nhận đơn
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{
+                backgroundColor: "#DC3545",
+                padding: 14,
+                borderRadius: 8,
+                flexDirection: "row",
+                alignItems: "center",
+                flex: 1,
+                justifyContent: "center",
+              }}
+              onPress={handleAdminCancel}
+            >
+              <Ionicons name="close-circle" size={20} color="#FFF" />
+              <Text
+                style={{ color: "#FFF", fontWeight: "bold", marginLeft: 8 }}
+              >
+                Hủy đơn
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
     </LinearGradient>
   );
@@ -447,5 +658,41 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: "#999",
     marginTop: 15,
+  },
+  bankInfoContainer: {
+    backgroundColor: "#F8F9FA",
+    borderRadius: 10,
+    padding: 15,
+    marginTop: 10,
+  },
+  bankInfoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  bankInfoLabel: {
+    fontSize: 14,
+    color: "#666",
+    fontWeight: "500",
+  },
+  bankInfoValue: {
+    fontSize: 14,
+    color: "#333",
+    fontWeight: "600",
+  },
+  adminNote: {
+    flexDirection: "row",
+    backgroundColor: "#E3F2FD",
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 12,
+    gap: 8,
+  },
+  adminNoteText: {
+    fontSize: 13,
+    color: "#1976D2",
+    flex: 1,
+    lineHeight: 18,
   },
 });
