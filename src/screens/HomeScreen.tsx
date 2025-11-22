@@ -427,7 +427,8 @@ const HomeScreen = () => {
                       <Image
                         source={{
                           uri:
-                            item.imageUrl || "https://via.placeholder.com/100",
+                            item.imageUrl ||
+                            "https://via.placeholder.com/100",
                         }}
                         style={styles.hotImage}
                       />

@@ -27,6 +27,7 @@ const GEMINI_API_KEY = "YOUR_API_KEY_HERE"; // Thay bằng API key của bạn
 ```
 
 Ví dụ:
+
 ```typescript
 const GEMINI_API_KEY = "AIzaSyDlSVPPPF7w8BLo6E2LwDXeXzCq0c1234";
 ```
@@ -59,13 +60,16 @@ const GEMINI_API_KEY = "AIzaSyDlSVPPPF7w8BLo6E2LwDXeXzCq0c1234";
 ## Troubleshooting
 
 ### Lỗi "API Error: 400"
+
 - Kiểm tra API key có đúng không
 - Đảm bảo đã enable Gemini API trong Google Cloud Console
 
 ### Lỗi "API Error: 429"
+
 - Vượt quá giới hạn request
 - Chờ 1 phút rồi thử lại
 
 ### AI trả lời không chính xác
+
 - Kiểm tra dữ liệu sản phẩm trong Firestore
 - Đảm bảo field `name`, `price`, `category` đầy đủ
