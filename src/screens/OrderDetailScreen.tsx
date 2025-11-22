@@ -14,8 +14,10 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../services/firebaseConfig";
 import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useApp } from "../contexts/AppContext";
 
 const OrderDetailScreen = () => {
+  const { theme, t } = useApp();
   const route = useRoute();
   const navigation = useNavigation();
   const { orderId } = route.params as any;
@@ -138,7 +140,7 @@ const OrderDetailScreen = () => {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#924900" />
+        <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
   }
@@ -146,15 +148,21 @@ const OrderDetailScreen = () => {
   if (!order) {
     return (
       <View style={styles.center}>
-        <Ionicons name="alert-circle-outline" size={80} color="#CCC" />
-        <Text style={styles.emptyText}>Không tìm thấy đơn hàng</Text>
+        <Ionicons
+          name="alert-circle-outline"
+          size={80}
+          color={theme.text + "30"}
+        />
+        <Text style={[styles.emptyText, { color: theme.text }]}>
+          Không tìm thấy đơn hàng
+        </Text>
       </View>
     );
   }
 
   return (
     <LinearGradient
-      colors={["#FFF5E6", "#FFE8CC", "#FFFFFF"]}
+      colors={[theme.lightBg, theme.background, "#FFFFFF"]}
       style={styles.container}
     >
       {/* Header */}
@@ -163,9 +171,11 @@ const OrderDetailScreen = () => {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <Ionicons name="arrow-back" size={28} color="#924900" />
+          <Ionicons name="arrow-back" size={28} color={theme.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Chi tiết đơn hàng</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>
+          {t("orderInformation")}
+        </Text>
         <View style={{ width: 28 }} />
       </View>
 
@@ -177,8 +187,12 @@ const OrderDetailScreen = () => {
         <View style={styles.card}>
           <View style={styles.orderHeaderRow}>
             <View style={styles.orderIdSection}>
-              <Text style={styles.label}>Mã đơn hàng</Text>
-              <Text style={styles.orderIdText}>#{order.id}</Text>
+              <Text style={[styles.label, { color: theme.text }]}>
+                Mã đơn hàng
+              </Text>
+              <Text style={[styles.orderIdText, { color: theme.primary }]}>
+                #{order.id}
+              </Text>
             </View>
             <View
               style={[
@@ -201,34 +215,50 @@ const OrderDetailScreen = () => {
         {/* Thông tin thời gian */}
         <View style={styles.card}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="calendar-outline" size={24} color="#924900" />
-            <Text style={styles.sectionTitle}>Thời gian đặt hàng</Text>
+            <Ionicons name="calendar-outline" size={24} color={theme.primary} />
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>
+              {t("orderDate")}
+            </Text>
           </View>
           <View style={styles.infoRow}>
-            <Ionicons name="time-outline" size={20} color="#666" />
-            <Text style={styles.infoText}>{formatDate(order.createdAt)}</Text>
+            <Ionicons name="time-outline" size={20} color={theme.text + "80"} />
+            <Text style={[styles.infoText, { color: theme.text }]}>
+              {formatDate(order.createdAt)}
+            </Text>
           </View>
         </View>
 
         {/* Thông tin giao hàng */}
         <View style={styles.card}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="location-outline" size={24} color="#924900" />
-            <Text style={styles.sectionTitle}>Thông tin giao hàng</Text>
+            <Ionicons name="location-outline" size={24} color={theme.primary} />
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>
+              {t("recipientInfo")}
+            </Text>
           </View>
           <View style={styles.infoRow}>
-            <Ionicons name="person-outline" size={20} color="#666" />
-            <Text style={styles.infoText}>{order.name || "Chưa có tên"}</Text>
+            <Ionicons
+              name="person-outline"
+              size={20}
+              color={theme.text + "80"}
+            />
+            <Text style={[styles.infoText, { color: theme.text }]}>
+              {order.name || "Chưa có tên"}
+            </Text>
           </View>
           <View style={styles.infoRow}>
-            <Ionicons name="call-outline" size={20} color="#666" />
-            <Text style={styles.infoText}>
+            <Ionicons name="call-outline" size={20} color={theme.text + "80"} />
+            <Text style={[styles.infoText, { color: theme.text }]}>
               {order.phone || "Chưa có số điện thoại"}
             </Text>
           </View>
           <View style={styles.infoRow}>
-            <Ionicons name="location-outline" size={20} color="#666" />
-            <Text style={styles.infoText}>
+            <Ionicons
+              name="location-outline"
+              size={20}
+              color={theme.text + "80"}
+            />
+            <Text style={[styles.infoText, { color: theme.text }]}>
               {order.address || "Chưa có địa chỉ"}
             </Text>
           </View>
@@ -237,8 +267,10 @@ const OrderDetailScreen = () => {
         {/* Chi tiết sản phẩm */}
         <View style={styles.card}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="basket-outline" size={24} color="#924900" />
-            <Text style={styles.sectionTitle}>Chi tiết sản phẩm</Text>
+            <Ionicons name="basket-outline" size={24} color={theme.primary} />
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>
+              {t("productList")}
+            </Text>
           </View>
 
           {order.items && order.items.length > 0 ? (
@@ -290,19 +322,29 @@ const OrderDetailScreen = () => {
         <View style={styles.card}>
           <View style={styles.totalContainer}>
             <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Tạm tính:</Text>
-              <Text style={styles.totalValue}>
+              <Text style={[styles.totalLabel, { color: theme.text }]}>
+                {t("subtotal")}:
+              </Text>
+              <Text style={[styles.totalValue, { color: theme.text }]}>
                 {formatPrice(order.total || 0)}
               </Text>
             </View>
             <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Phí vận chuyển:</Text>
-              <Text style={styles.totalValue}>Miễn phí</Text>
+              <Text style={[styles.totalLabel, { color: theme.text }]}>
+                {t("shippingFee")}:
+              </Text>
+              <Text style={[styles.totalValue, { color: theme.text }]}>
+                Miễn phí
+              </Text>
             </View>
-            <View style={styles.divider} />
+            <View
+              style={[styles.divider, { backgroundColor: theme.text + "20" }]}
+            />
             <View style={styles.totalRow}>
-              <Text style={styles.grandTotalLabel}>Tổng cộng:</Text>
-              <Text style={styles.grandTotalValue}>
+              <Text style={[styles.grandTotalLabel, { color: theme.primary }]}>
+                Tổng cộng:
+              </Text>
+              <Text style={[styles.grandTotalValue, { color: theme.primary }]}>
                 {formatPrice(order.total || 0)}
               </Text>
             </View>
@@ -312,8 +354,10 @@ const OrderDetailScreen = () => {
         {/* Thông tin thanh toán */}
         <View style={styles.card}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="card-outline" size={24} color="#924900" />
-            <Text style={styles.sectionTitle}>Phương thức thanh toán</Text>
+            <Ionicons name="card-outline" size={24} color={theme.primary} />
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>
+              {t("paymentMethod")}
+            </Text>
           </View>
           <View style={styles.infoRow}>
             <Ionicons
@@ -321,12 +365,12 @@ const OrderDetailScreen = () => {
                 order.paymentMethod === "cash" ? "cash-outline" : "card-outline"
               }
               size={20}
-              color="#666"
+              color={theme.text + "80"}
             />
-            <Text style={styles.infoText}>
+            <Text style={[styles.infoText, { color: theme.text }]}>
               {order.paymentMethod === "cash"
-                ? "Tiền mặt khi nhận hàng"
-                : "Chuyển khoản ngân hàng"}
+                ? t("cashOnDelivery")
+                : t("bankTransfer")}
             </Text>
           </View>
 
@@ -334,14 +378,18 @@ const OrderDetailScreen = () => {
           {order.paymentMethod === "bank" && order.bankInfo && (
             <View style={styles.bankInfoContainer}>
               <View style={styles.bankInfoRow}>
-                <Text style={styles.bankInfoLabel}>Ngân hàng:</Text>
-                <Text style={styles.bankInfoValue}>
+                <Text style={[styles.bankInfoLabel, { color: theme.text }]}>
+                  Ngân hàng:
+                </Text>
+                <Text style={[styles.bankInfoValue, { color: theme.text }]}>
                   {order.bankInfo.bankName}
                 </Text>
               </View>
               <View style={styles.bankInfoRow}>
-                <Text style={styles.bankInfoLabel}>Số tài khoản:</Text>
-                <Text style={styles.bankInfoValue}>
+                <Text style={[styles.bankInfoLabel, { color: theme.text }]}>
+                  Số tài khoản:
+                </Text>
+                <Text style={[styles.bankInfoValue, { color: theme.text }]}>
                   {order.bankInfo.accountNumber}
                 </Text>
               </View>

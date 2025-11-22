@@ -24,11 +24,13 @@ import {
   useRoute,
   useFocusEffect,
 } from "@react-navigation/native";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, onSnapshot } from "firebase/firestore";
 import { db } from "../services/firebaseConfig";
 import ProductCard from "../components/ProductCard";
 import BannerCarousel from "../components/BannerCarousel";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
+import { useApp } from "../contexts/AppContext";
 
 const { width } = Dimensions.get("window");
 const ITEM_SIZE = (width - 60) / 4; // 4 cột / hàng
@@ -48,10 +50,12 @@ function normalizeVN(s: string) {
 const HomeScreen = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  const { theme, t } = useApp();
 
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [history, setHistory] = useState<string[]>([]);
   const [searchMode, setSearchMode] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -59,21 +63,32 @@ const HomeScreen = () => {
   const categoryProgressWidth = useRef(new Animated.Value(0)).current;
   const categoryFlatListRef = useRef<FlatList>(null);
 
-  /* ---------------- Fetch data + history ---------------- */
+  /* ---------------- Fetch data + history with real-time updates ---------------- */
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [productSnap, categorySnap] = await Promise.all([
-          getDocs(collection(db, "products")),
-          getDocs(collection(db, "categories")),
-        ]);
+    setLoading(true);
 
-        const productData = productSnap.docs.map((doc) => ({
+    // Real-time listener for products
+    const unsubscribeProducts = onSnapshot(
+      collection(db, "products"),
+      (snapshot) => {
+        const productData = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
+        setProducts(productData);
+        setLoading(false);
+      },
+      (error) => {
+        console.error("❌ Lỗi khi tải sản phẩm:", error);
+        setLoading(false);
+      }
+    );
 
-        const categoryData: Category[] = categorySnap.docs.map((doc) => {
+    // Real-time listener for categories
+    const unsubscribeCategories = onSnapshot(
+      collection(db, "categories"),
+      (snapshot) => {
+        const categoryData: Category[] = snapshot.docs.map((doc) => {
           const d: any = doc.data();
           return {
             categoryId: d.categoryId ?? doc.id,
@@ -81,27 +96,40 @@ const HomeScreen = () => {
             imageUrl: d.imageUrl,
           };
         });
-
-        setProducts(productData);
         setCategories(categoryData);
-      } catch (e) {
-        console.error("❌ Lỗi khi tải dữ liệu:", e);
-      } finally {
-        setLoading(false);
+      },
+      (error) => {
+        console.error("❌ Lỗi khi tải danh mục:", error);
       }
-    };
+    );
 
-    fetchData();
+    // Load search history
     AsyncStorage.getItem("searchHistory").then((v) =>
       setHistory(v ? JSON.parse(v) : [])
     );
+
+    // Cleanup listeners on unmount
+    return () => {
+      unsubscribeProducts();
+      unsubscribeCategories();
+    };
   }, []);
+
+  /* ---------------- Debounce search input (500ms) ---------------- */
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [search]);
 
   /* ---------------- Nhận cờ reset từ SearchResult ---------------- */
   useEffect(() => {
     const reset = route.params?.resetSearch;
     if (reset) {
       setSearch("");
+      setDebouncedSearch("");
       setSearchMode(false);
       navigation.setParams?.({ resetSearch: undefined, ts: undefined });
     }
@@ -232,9 +260,9 @@ const HomeScreen = () => {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#924900" />
-          <Text style={{ marginTop: 8, color: "#924900" }}>
-            Đang tải dữ liệu...
+          <ActivityIndicator size="large" color={theme.primary} />
+          <Text style={{ marginTop: 8, color: theme.primary }}>
+            {t("loadingData")}
           </Text>
         </View>
       </SafeAreaView>
@@ -243,26 +271,34 @@ const HomeScreen = () => {
 
   /* ---------------- Render ---------------- */
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: theme.background }]}
+    >
       <View style={styles.container}>
         {/* HEADER CHÀO HỎI */}
         {!searchMode && (
           <View style={styles.topHeader}>
             <View>
-              <Text style={styles.helloText}>Xin chào,</Text>
-              <Text style={styles.appName}>Bakery App</Text>
-              <Text style={styles.subtitle}>
+              <Text style={[styles.helloText, { color: theme.text }]}>
+                Xin chào,
+              </Text>
+              <Text style={[styles.appName, { color: theme.primary }]}>
+                Bakery App
+              </Text>
+              <Text style={[styles.subtitle, { color: theme.text }]}>
                 Đặt bánh ngon, giao tận nơi cho bạn 🍰
               </Text>
             </View>
-            <View style={styles.headerAvatar}>
+            <View
+              style={[styles.headerAvatar, { backgroundColor: theme.primary }]}
+            >
               <Ionicons name="restaurant" size={30} color="#fff" />
             </View>
           </View>
         )}
 
         {/* Thanh tìm kiếm */}
-        <View style={styles.searchBar}>
+        <View style={[styles.searchBar, { borderColor: theme.lightBg }]}>
           {searchMode ? (
             <TouchableOpacity
               onPress={() => {
@@ -272,21 +308,21 @@ const HomeScreen = () => {
               }}
               style={styles.iconLeft}
             >
-              <Ionicons name="arrow-back" size={22} color="#924900" />
+              <Ionicons name="arrow-back" size={22} color={theme.primary} />
             </TouchableOpacity>
           ) : (
             <Ionicons
               name="search"
               size={20}
-              color="#C0A27A"
+              color={theme.secondary}
               style={styles.iconLeft}
             />
           )}
 
           <TextInput
-            placeholder="Tìm bánh bạn yêu thích..."
-            placeholderTextColor="#B39A80"
-            style={styles.searchInput}
+            placeholder={t("searchPlaceholder")}
+            placeholderTextColor={theme.text}
+            style={[styles.searchInput, { color: theme.text }]}
             value={search}
             onChangeText={setSearch}
             onFocus={() => setSearchMode(true)}
@@ -296,7 +332,7 @@ const HomeScreen = () => {
 
           {searchMode && (
             <TouchableOpacity onPress={handleSearch} style={styles.iconRight}>
-              <Ionicons name="search" size={22} color="#924900" />
+              <Ionicons name="search" size={22} color={theme.primary} />
             </TouchableOpacity>
           )}
         </View>
@@ -310,7 +346,9 @@ const HomeScreen = () => {
             {/* Lịch sử tìm kiếm */}
             <View style={styles.section}>
               <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionTitle}>🕓 Lịch sử tìm kiếm</Text>
+                <Text style={[styles.sectionTitle, { color: theme.primary }]}>
+                  {t("searchHistory")}
+                </Text>
                 {history.length > 0 && (
                   <TouchableOpacity
                     onPress={async () => {
@@ -318,15 +356,22 @@ const HomeScreen = () => {
                       setHistory([]);
                     }}
                   >
-                    <Text style={styles.clearHistoryText}>Xóa</Text>
+                    <Text
+                      style={[
+                        styles.clearHistoryText,
+                        { color: theme.secondary },
+                      ]}
+                    >
+                      {t("clear")}
+                    </Text>
                   </TouchableOpacity>
                 )}
               </View>
 
               <View style={styles.card}>
                 {history.length === 0 ? (
-                  <Text style={{ color: "#8C7A5A" }}>
-                    Chưa có lịch sử tìm kiếm.
+                  <Text style={{ color: theme.text }}>
+                    {t("noSearchHistory")}
                   </Text>
                 ) : (
                   <View style={styles.historyList}>
@@ -337,14 +382,21 @@ const HomeScreen = () => {
                           setSearch(term);
                           handleSearch();
                         }}
-                        style={styles.historyItem}
+                        style={[
+                          styles.historyItem,
+                          { backgroundColor: theme.lightBg },
+                        ]}
                       >
                         <Ionicons
                           name="time-outline"
                           size={16}
-                          color="#B08968"
+                          color={theme.secondary}
                         />
-                        <Text style={styles.historyText}>{term}</Text>
+                        <Text
+                          style={[styles.historyText, { color: theme.text }]}
+                        >
+                          {term}
+                        </Text>
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -354,7 +406,9 @@ const HomeScreen = () => {
 
             {/* Gợi ý món hot */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>🔥 Gợi ý cho bạn</Text>
+              <Text style={[styles.sectionTitle, { color: theme.primary }]}>
+                {t("suggestionsForYou")}
+              </Text>
               <View
                 style={[styles.card, { paddingHorizontal: 10, marginTop: 12 }]}
               >
@@ -408,7 +462,9 @@ const HomeScreen = () => {
             {/* Danh mục nổi bật */}
             <View style={styles.section}>
               <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionTitle}>🎂 Danh mục nổi bật</Text>
+                <Text style={[styles.sectionTitle, { color: theme.primary }]}>
+                  {t("featuredCategories")}
+                </Text>
               </View>
 
               <View style={styles.card}>
@@ -444,9 +500,15 @@ const HomeScreen = () => {
                                 cat.imageUrl ||
                                 "https://via.placeholder.com/100",
                             }}
-                            style={styles.categoryImage}
+                            style={[
+                              styles.categoryImage,
+                              { backgroundColor: theme.lightBg },
+                            ]}
                           />
-                          <Text style={styles.categoryName} numberOfLines={1}>
+                          <Text
+                            style={[styles.categoryName, { color: theme.text }]}
+                            numberOfLines={1}
+                          >
                             {cat.name}
                           </Text>
                         </TouchableOpacity>
@@ -464,6 +526,7 @@ const HomeScreen = () => {
                       styles.progressBarContainer,
                       {
                         width: width - 80,
+                        backgroundColor: theme.lightBg,
                       },
                     ]}
                   >
@@ -474,6 +537,7 @@ const HomeScreen = () => {
                           width:
                             ((width - 80) / (width * pages.length)) *
                             (width - 80),
+                          backgroundColor: theme.primary,
                           transform: [
                             {
                               translateX: categoryProgressWidth,
@@ -490,7 +554,9 @@ const HomeScreen = () => {
             {/* Món hot trong tuần */}
             <View style={styles.section}>
               <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionTitle}>🔥 Món hot trong tuần</Text>
+                <Text style={[styles.sectionTitle, { color: theme.primary }]}>
+                  {t("hotThisWeek")}
+                </Text>
               </View>
               <View style={styles.card}>
                 <FlatList
@@ -528,9 +594,12 @@ const HomeScreen = () => {
         }}
         activeOpacity={0.8}
       >
-        <View style={styles.aiButtonGradient}>
+        <LinearGradient
+          colors={theme.aiGradient as any}
+          style={styles.aiButtonGradient}
+        >
           <Ionicons name="sparkles" size={28} color="#FFF" />
-        </View>
+        </LinearGradient>
         <View style={styles.aiBadge}>
           <Text style={styles.aiBadgeText}>AI</Text>
         </View>
@@ -545,7 +614,6 @@ export default HomeScreen;
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#FFF5E6",
   },
   container: {
     flex: 1,
@@ -562,17 +630,16 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
     paddingTop: 10,
   },
-  helloText: { fontSize: 14, color: "#8C7A5A" },
-  appName: { fontSize: 22, fontWeight: "bold", color: "#924900" },
-  subtitle: { fontSize: 13, color: "#A2845E", marginTop: 4 },
+  helloText: { fontSize: 14 },
+  appName: { fontSize: 22, fontWeight: "bold" },
+  subtitle: { fontSize: 13, marginTop: 4 },
   headerAvatar: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: "#C06000",
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#924900",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
@@ -587,14 +654,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF",
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#F0D8B8",
     paddingHorizontal: 14,
     paddingVertical: 6,
     marginBottom: 12,
   },
   iconLeft: { marginRight: 8 },
   iconRight: { marginLeft: 6 },
-  searchInput: { flex: 1, fontSize: 15, paddingVertical: 4, color: "#4A3325" },
+  searchInput: { flex: 1, fontSize: 15, paddingVertical: 4 },
 
   /* Section */
   section: { marginTop: 8, paddingHorizontal: 20, marginBottom: 12 },
@@ -607,11 +673,9 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#924900",
   },
   clearHistoryText: {
     fontSize: 13,
-    color: "#C06000",
     fontWeight: "600",
   },
 
@@ -647,14 +711,12 @@ const styles = StyleSheet.create({
     width: ITEM_SIZE - 8,
     height: ITEM_SIZE - 8,
     borderRadius: 14,
-    backgroundColor: "#FFF1DE",
     marginBottom: 6,
   },
   categoryName: {
     fontSize: 13,
     fontWeight: "600",
     textAlign: "center",
-    color: "#4A3325",
   },
 
   /* Search mode: History + Suggestions */
@@ -662,7 +724,6 @@ const styles = StyleSheet.create({
   historyItem: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFF1DE",
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 5,
@@ -672,7 +733,6 @@ const styles = StyleSheet.create({
   historyText: {
     marginLeft: 5,
     fontSize: 13,
-    color: "#4A3325",
     fontWeight: "500",
   },
 
@@ -691,35 +751,29 @@ const styles = StyleSheet.create({
     width: (width - 80) / 4 - 10,
     height: (width - 80) / 4 - 10,
     borderRadius: 10,
-    backgroundColor: "#FFF1DE",
     marginBottom: 5,
   },
   hotName: {
     fontSize: 12,
     textAlign: "center",
-    color: "#4A3325",
     fontWeight: "500",
   },
   progressBarContainer: {
     marginTop: 6,
     height: 3,
-    backgroundColor: "#DCC9B0",
     borderRadius: 1.5,
     alignSelf: "center",
   },
   progressBarThumb: {
     height: "100%",
-    backgroundColor: "#C06000",
     borderRadius: 1.5,
   },
   progressBarBackground: {
     height: "100%",
     width: "100%",
-    backgroundColor: "#f5f5f5",
   },
   progressBarFill: {
     height: "100%",
-    backgroundColor: "#C06000",
   },
 
   // AI Floating Button
@@ -740,7 +794,6 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: "#924900",
     justifyContent: "center",
     alignItems: "center",
   },

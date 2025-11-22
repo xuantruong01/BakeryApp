@@ -23,9 +23,11 @@ import {
 } from "firebase/firestore";
 import { db } from "../services/firebaseConfig";
 import { LinearGradient } from "expo-linear-gradient";
+import { useApp } from "../contexts/AppContext";
 
 const OrdersScreen = () => {
   const navigation = useNavigation();
+  const { theme, t } = useApp();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -167,19 +169,18 @@ const OrdersScreen = () => {
   }
 
   return (
-    <LinearGradient
-      colors={["#FFF5E6", "#FFE8CC", "#FFFFFF"]}
-      style={styles.container}
-    >
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <Ionicons name="arrow-back" size={28} color="#924900" />
+          <Ionicons name="arrow-back" size={28} color={theme.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Đơn hàng của tôi</Text>
+        <Text style={[styles.headerTitle, { color: theme.primary }]}>
+          {t("myOrders")}
+        </Text>
         <View style={{ width: 28 }} />
       </View>
 
@@ -190,17 +191,22 @@ const OrdersScreen = () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={["#924900"]}
+            colors={[theme.primary]}
           />
         }
       >
         {orders.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Ionicons name="cart-outline" size={80} color="#CCC" />
-            <Text style={styles.emptyText}>Chưa có đơn hàng nào</Text>
-            <Text style={styles.emptySubtext}>
-              Các đơn hàng của bạn sẽ hiển thị ở đây
+            <Ionicons
+              name="cart-outline"
+              size={80}
+              color={theme.primary}
+              style={{ opacity: 0.3 }}
+            />
+            <Text style={[styles.emptyText, { color: theme.text }]}>
+              {t("noOrdersYet")}
             </Text>
+            <Text style={styles.emptySubtext}>{t("ordersWillShowHere")}</Text>
           </View>
         ) : (
           <View style={styles.ordersContainer}>
@@ -319,7 +325,7 @@ const OrdersScreen = () => {
           </View>
         )}
       </ScrollView>
-    </LinearGradient>
+    </View>
   );
 };
 

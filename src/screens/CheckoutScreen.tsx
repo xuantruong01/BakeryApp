@@ -31,11 +31,14 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 import { useRoute, useNavigation } from "@react-navigation/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { useApp } from "../contexts/AppContext";
 
 export default function CheckoutScreen() {
+  const { theme, t } = useApp();
   const route = useRoute();
   const navigation = useNavigation<any>();
   const directProduct = (route.params as any)?.productDirect;
+  const selectedItemsFromCart = (route.params as any)?.selectedItems;
 
   const [user, setUser] = useState<any>(null);
   const [name, setName] = useState("");
@@ -132,8 +135,16 @@ export default function CheckoutScreen() {
         if (directProduct) {
           setCartItems([directProduct]);
           setTotal(parseInt(directProduct.price) * directProduct.quantity);
+        } else if (selectedItemsFromCart && selectedItemsFromCart.length > 0) {
+          // ✅ Nếu có items được chọn từ CartScreen
+          setCartItems(selectedItemsFromCart);
+          const totalPrice = selectedItemsFromCart.reduce(
+            (sum, i) => sum + parseInt(i.price) * i.quantity,
+            0
+          );
+          setTotal(totalPrice);
         } else {
-          // ✅ Lấy giỏ hàng từ Firestore
+          // ✅ Lấy toàn bộ giỏ hàng từ Firestore (fallback)
           const itemsRef = collection(db, "carts", userData.uid, "items");
           const itemsSnap = await getDocs(itemsRef);
           const items = itemsSnap.docs.map((d) => ({
@@ -171,7 +182,7 @@ export default function CheckoutScreen() {
     };
 
     fetchData();
-  }, [directProduct]);
+  }, [directProduct, selectedItemsFromCart]);
 
   // 🧾 Xử lý xác nhận đặt hàng
   const handleConfirm = async () => {
@@ -267,11 +278,10 @@ export default function CheckoutScreen() {
         }
       }
 
-      // ✅ Nếu đặt hàng từ giỏ → xóa giỏ hàng
+      // ✅ Nếu đặt hàng từ giỏ → xóa các items đã chọn khỏi giỏ hàng
       if (!directProduct) {
-        const itemsRef = collection(db, "carts", user.uid, "items");
-        const itemsSnap = await getDocs(itemsRef);
-        for (const item of itemsSnap.docs) {
+        // Chỉ xóa những sản phẩm đã được chọn để thanh toán
+        for (const item of cartItems) {
           await deleteDoc(doc(db, "carts", user.uid, "items", item.id));
         }
       }
@@ -285,7 +295,9 @@ export default function CheckoutScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView
+        style={[styles.safeArea, { backgroundColor: theme.background }]}
+      >
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#E58E26" />
           <Text>Đang tải dữ liệu...</Text>
@@ -295,7 +307,9 @@ export default function CheckoutScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: theme.background }]}
+    >
       <TouchableOpacity
         style={styles.backButton}
         onPress={() => navigation.goBack()}
@@ -515,7 +529,7 @@ export default function CheckoutScreen() {
                             ) : null}
                             <TouchableOpacity
                               style={{
-                                backgroundColor: "#E58E26",
+                                backgroundColor: theme.primary,
                                 padding: 12,
                                 borderRadius: 8,
                                 alignItems: "center",
@@ -557,7 +571,10 @@ export default function CheckoutScreen() {
             <Text style={styles.totalText}>
               Tổng cộng: {total.toLocaleString()}đ
             </Text>
-            <TouchableOpacity style={styles.confirmBtn} onPress={handleConfirm}>
+            <TouchableOpacity
+              style={[styles.confirmBtn, { backgroundColor: theme.primary }]}
+              onPress={handleConfirm}
+            >
               <Text style={styles.confirmText}>✅ Xác nhận đặt hàng</Text>
             </TouchableOpacity>
           </>
@@ -568,7 +585,7 @@ export default function CheckoutScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#fff", padding: 16 },
+  safeArea: { flex: 1, padding: 16 },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   title: {
     fontSize: 22,
@@ -609,7 +626,6 @@ const styles = StyleSheet.create({
     color: "#924900",
   },
   confirmBtn: {
-    backgroundColor: "#E58E26",
     marginTop: 16,
     paddingVertical: 14,
     borderRadius: 10,

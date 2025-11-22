@@ -14,8 +14,10 @@ import { Ionicons } from "@expo/vector-icons"; // ✅ sửa import Ionicons
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { doc, getDoc, setDoc, updateDoc, increment } from "firebase/firestore";
 import { db } from "../services/firebaseConfig";
+import { useApp } from "../contexts/AppContext";
 
 export default function ProductDetailScreen({ route, navigation }: any) {
+  const { theme, t } = useApp();
   const { product } = route.params;
   const [quantity, setQuantity] = useState(1);
 
@@ -31,7 +33,7 @@ export default function ProductDetailScreen({ route, navigation }: any) {
       }
 
       if (product.stock === 0) {
-        Alert.alert("⚠️", "Sản phẩm đã hết hàng!");
+        Alert.alert("⚠️", t("productOutOfStock"));
         return;
       }
 
@@ -81,8 +83,10 @@ export default function ProductDetailScreen({ route, navigation }: any) {
           onPress={() => navigation.goBack()}
           activeOpacity={0.8}
         >
-          <Ionicons name="chevron-back" size={24} color="#333" />
-          <Text style={styles.backText}>Quay lại</Text>
+          <Ionicons name="chevron-back" size={24} color={theme.text} />
+          <Text style={[styles.backText, { color: theme.text }]}>
+            {t("backButton")}
+          </Text>
         </TouchableOpacity>
 
         {!!product.imageUrl && (
@@ -94,14 +98,18 @@ export default function ProductDetailScreen({ route, navigation }: any) {
         )}
 
         <View style={styles.body}>
-          <Text style={styles.name}>{product.name}</Text>
-          <Text style={styles.price}>
+          <Text style={[styles.name, { color: theme.text }]}>
+            {product.name}
+          </Text>
+          <Text style={[styles.price, { color: theme.primary }]}>
             {Number(product.price).toLocaleString()} VND
           </Text>
 
-          {/* 🧱 Bộ chọn số lượng */}
+          {/* 🧺 Bộ chọn số lượng */}
           <View style={styles.qtyContainer}>
-            <Text style={styles.qtyLabel}>Số lượng</Text>
+            <Text style={[styles.qtyLabel, { color: theme.text }]}>
+              {t("quantity")}
+            </Text>
 
             <View style={styles.qtyBox}>
               {/* Giảm số lượng */}
@@ -113,6 +121,7 @@ export default function ProductDetailScreen({ route, navigation }: any) {
                 <Text
                   style={[
                     styles.qtySymbol,
+                    { color: theme.primary },
                     (quantity <= 1 || product.stock === 0) && { color: "#bbb" },
                   ]}
                 >
@@ -122,7 +131,10 @@ export default function ProductDetailScreen({ route, navigation }: any) {
 
               {/* ✅ Ô nhập số lượng */}
               <TextInput
-                style={styles.qtyInput}
+                style={[
+                  styles.qtyInput,
+                  { color: theme.text, borderColor: theme.primary + "40" },
+                ]}
                 keyboardType="numeric"
                 editable={product.stock > 0} // ❌ Không cho nhập nếu hết hàng
                 value={String(quantity)}
@@ -151,6 +163,7 @@ export default function ProductDetailScreen({ route, navigation }: any) {
                 <Text
                   style={[
                     styles.qtySymbol,
+                    { color: theme.primary },
                     (product.stock === 0 ||
                       quantity >= (product.stock ?? 9999)) && { color: "#bbb" },
                   ]}
@@ -163,19 +176,23 @@ export default function ProductDetailScreen({ route, navigation }: any) {
             {/* ⚠️ Nếu hết hàng */}
             {product.stock === 0 && (
               <Text style={{ color: "red", marginTop: 4, fontSize: 13 }}>
-                Sản phẩm đã hết hàng
+                {t("productOutOfStock")}
               </Text>
             )}
           </View>
 
           {/* Mô tả & tồn kho */}
-          <Text style={styles.section}>Mô tả</Text>
-          <Text style={styles.desc}>
+          <Text style={[styles.section, { color: theme.text }]}>
+            {t("productDescription")}
+          </Text>
+          <Text style={[styles.desc, { color: theme.text }]}>
             {product.description || "Không có mô tả."}
           </Text>
 
-          <Text style={styles.section}>Tồn kho</Text>
-          <Text>{product.stock ?? 0} sản phẩm</Text>
+          <Text style={[styles.section, { color: theme.text }]}>Tồn kho</Text>
+          <Text style={{ color: theme.text }}>
+            {product.stock ?? 0} sản phẩm
+          </Text>
         </View>
       </ScrollView>
 
@@ -185,6 +202,7 @@ export default function ProductDetailScreen({ route, navigation }: any) {
           <TouchableOpacity
             style={[
               styles.btnAddCart,
+              { backgroundColor: theme.primary },
               product.stock === 0 && { backgroundColor: "#ccc" },
             ]}
             onPress={addToCart}
@@ -192,13 +210,17 @@ export default function ProductDetailScreen({ route, navigation }: any) {
             disabled={product.stock === 0}
           >
             <Text style={styles.btnText}>
-              🛒 {product.stock === 0 ? "Hết hàng" : `Thêm ${quantity}`}
+              🛍️{" "}
+              {product.stock === 0
+                ? t("productOutOfStock")
+                : `${t("addToCartButton")} ${quantity}`}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[
               styles.btnCheckout,
+              { backgroundColor: theme.secondary },
               product.stock === 0 && { backgroundColor: "#ccc" },
             ]}
             onPress={() =>
@@ -210,7 +232,7 @@ export default function ProductDetailScreen({ route, navigation }: any) {
             disabled={product.stock === 0}
           >
             <Text style={styles.btnText}>
-              💳 {product.stock === 0 ? "Không thể đặt" : "Đặt ngay"}
+              💳 {product.stock === 0 ? t("productOutOfStock") : t("buyNow")}
             </Text>
           </TouchableOpacity>
         </View>
@@ -233,21 +255,26 @@ const styles = StyleSheet.create({
   backText: {
     fontSize: 16,
     fontWeight: "500",
-    color: "#333",
     marginLeft: 5,
   },
 
-  image: { width: "100%", height: 260, borderRadius: 10, marginTop: 12, marginHorizontal: 12 },
+  image: {
+    width: "100%",
+    height: 260,
+    borderRadius: 10,
+    marginTop: 12,
+    marginHorizontal: 12,
+  },
   body: { padding: 16 },
-  name: { fontSize: 22, fontWeight: "700", color: "#333" },
-  price: { marginTop: 6, fontSize: 18, color: "#E58E26", fontWeight: "700" },
+  name: { fontSize: 22, fontWeight: "700" },
+  price: { marginTop: 6, fontSize: 18, fontWeight: "700" },
 
   qtyContainer: {
     marginTop: 15,
     flexDirection: "column",
     alignItems: "flex-start",
   },
-  qtyLabel: { fontSize: 16, fontWeight: "600", color: "#333", marginBottom: 6 },
+  qtyLabel: { fontSize: 16, fontWeight: "600", marginBottom: 6 },
   qtyBox: {
     flexDirection: "row",
     alignItems: "center",
@@ -256,22 +283,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   qtyBtn: { paddingHorizontal: 12, paddingVertical: 6 },
-  qtySymbol: { fontSize: 20, fontWeight: "700", color: "#E58E26" },
+  qtySymbol: { fontSize: 20, fontWeight: "700" },
   qtyInput: {
     width: 45,
     height: 36,
     textAlign: "center",
     borderWidth: 1,
-    borderColor: "#ddd",
     borderRadius: 8,
     fontSize: 16,
-    color: "#333",
     marginHorizontal: 6,
     paddingVertical: 4,
   },
 
   section: { marginTop: 16, fontSize: 16, fontWeight: "700" },
-  desc: { marginTop: 6, color: "#555", lineHeight: 20 },
+  desc: { marginTop: 6, lineHeight: 20 },
 
   bottomBar: {
     position: "absolute",
@@ -292,7 +317,6 @@ const styles = StyleSheet.create({
   },
   btnAddCart: {
     flex: 1,
-    backgroundColor: "#E58E26",
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: "center",
@@ -303,7 +327,6 @@ const styles = StyleSheet.create({
   },
   btnCheckout: {
     flex: 1,
-    backgroundColor: "#924900",
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: "center",

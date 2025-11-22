@@ -14,10 +14,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../../services/firebaseConfig";
 import { LinearGradient } from "expo-linear-gradient";
+import { useApp } from "../../contexts/AppContext";
 
 const { width } = Dimensions.get("window");
 
 const AdminStatisticsScreen = ({ navigation }) => {
+  const { theme } = useApp();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState({
@@ -49,12 +51,35 @@ const AdminStatisticsScreen = ({ navigation }) => {
     try {
       setLoading(true);
 
-      // Lấy tất cả đơn hàng
-      const ordersSnapshot = await getDocs(collection(db, "orders"));
+      // Lấy tất cả đơn hàng và danh mục
+      const [ordersSnapshot, categoriesSnapshot, productsSnapshot] =
+        await Promise.all([
+          getDocs(collection(db, "orders")),
+          getDocs(collection(db, "categories")),
+          getDocs(collection(db, "products")),
+        ]);
+
       const orders = ordersSnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       })) as any[];
+
+      // Tạo map danh mục để tra cứu nhanh
+      const categoriesMap = new Map();
+      categoriesSnapshot.docs.forEach((doc) => {
+        const data = doc.data();
+        categoriesMap.set(data.categoryId || doc.id, data.name);
+      });
+
+      // Tạo map sản phẩm để lấy categoryId
+      const productsMap = new Map();
+      productsSnapshot.docs.forEach((doc) => {
+        const data = doc.data();
+        productsMap.set(doc.id, {
+          categoryId: data.categoryId,
+          name: data.name,
+        });
+      });
 
       // Tính toán thời gian
       const now = new Date();
@@ -120,16 +145,24 @@ const AdminStatisticsScreen = ({ navigation }) => {
               revenue: current.revenue + (item.price || 0) * quantity,
             });
 
-            // Danh mục bán chạy
-            const categoryId = item.categoryId;
+            // Danh mục bán chạy - lấy từ productsMap
+            let categoryId = item.categoryId;
+            if (!categoryId && productId) {
+              // Nếu item không có categoryId, lấy từ productsMap
+              const productInfo = productsMap.get(productId);
+              categoryId = productInfo?.categoryId;
+            }
+
             if (categoryId) {
+              const categoryName =
+                categoriesMap.get(categoryId) || "Chưa phân loại";
               const catCurrent = categorySales.get(categoryId) || {
-                name: item.categoryName || "Unknown",
+                name: categoryName,
                 quantity: 0,
                 revenue: 0,
               };
               categorySales.set(categoryId, {
-                name: catCurrent.name,
+                name: categoryName,
                 quantity: catCurrent.quantity + quantity,
                 revenue: catCurrent.revenue + (item.price || 0) * quantity,
               });
@@ -228,7 +261,7 @@ const AdminStatisticsScreen = ({ navigation }) => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#FF6B6B" />
+        <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
   }
@@ -243,14 +276,20 @@ const AdminStatisticsScreen = ({ navigation }) => {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: theme.primary }]}
+      edges={["top"]}
+    >
       <ScrollView
         style={styles.container}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        <LinearGradient colors={["#FF6B6B", "#FF8E53"]} style={styles.header}>
+        <LinearGradient
+          colors={[theme.primary, theme.secondary]}
+          style={styles.header}
+        >
           <Text style={styles.headerTitle}>📊 Thống Kê Chi Tiết</Text>
           <Text style={styles.headerSubtitle}>
             Phân tích dữ liệu kinh doanh
@@ -456,7 +495,6 @@ const AdminStatisticsScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#FF6B6B",
   },
   container: {
     flex: 1,

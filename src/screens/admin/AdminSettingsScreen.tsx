@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -6,12 +6,18 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useApp } from "../../contexts/AppContext";
 
 const AdminSettingsScreen = ({ navigation }) => {
+  const { theme, themeName, language, setTheme, setLanguage, t } = useApp();
+  const [themeModalVisible, setThemeModalVisible] = useState(false);
+  const [languageModalVisible, setLanguageModalVisible] = useState(false);
+
   const SettingItem = ({ icon, title, subtitle, onPress, color = "#333" }) => (
     <TouchableOpacity style={styles.settingItem} onPress={onPress}>
       <View style={[styles.iconContainer, { backgroundColor: color + "20" }]}>
@@ -25,35 +31,70 @@ const AdminSettingsScreen = ({ navigation }) => {
     </TouchableOpacity>
   );
 
+  const themes = [
+    { id: "orange", name: "Cam", color: "#E58E26" },
+    { id: "blue", name: "Xanh dương", color: "#4A90E2" },
+    { id: "green", name: "Xanh lá", color: "#28A745" },
+    { id: "purple", name: "Tím", color: "#9C27B0" },
+    { id: "red", name: "Đỏ", color: "#DC3545" },
+  ];
+
+  const languages = [
+    { id: "vi", name: "Tiếng Việt", icon: "🇻🇳" },
+    { id: "en", name: "English", icon: "🇬🇧" },
+  ];
+
+  const handleThemeChange = async (themeId) => {
+    try {
+      await setTheme(themeId);
+      setThemeModalVisible(false);
+      Alert.alert(t("success"), t("themeChanged"));
+    } catch (error) {
+      Alert.alert(t("error"), t("cannotChangeTheme"));
+    }
+  };
+
+  const handleLanguageChange = async (languageId) => {
+    try {
+      await setLanguage(languageId);
+      setLanguageModalVisible(false);
+      Alert.alert("Success", "Language changed successfully!");
+    } catch (error) {
+      Alert.alert("Error", "Cannot change language");
+    }
+  };
+
   const handleClearCache = async () => {
-    Alert.alert(
-      "Xóa bộ nhớ đệm",
-      "Bạn có chắc muốn xóa bộ nhớ đệm? Điều này sẽ đăng xuất bạn khỏi ứng dụng.",
-      [
-        { text: "Hủy", style: "cancel" },
-        {
-          text: "Xóa",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await AsyncStorage.clear();
-              Alert.alert("Thành công", "Đã xóa bộ nhớ đệm");
-              navigation.reset({
-                index: 0,
-                routes: [{ name: "Login" }],
-              });
-            } catch (error) {
-              Alert.alert("Lỗi", "Không thể xóa bộ nhớ đệm");
-            }
-          },
+    Alert.alert(t("clearCacheTitle"), t("clearCacheMessage"), [
+      { text: t("cancel"), style: "cancel" },
+      {
+        text: t("delete"),
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await AsyncStorage.clear();
+            Alert.alert(t("success"), t("cacheCleared"));
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "Login" }],
+            });
+          } catch (error) {
+            Alert.alert(t("error"), t("cannotClearCache"));
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top"]}>
-      <View style={styles.header}>
+    <SafeAreaView
+      style={[
+        styles.safeArea,
+        { backgroundColor: themeName ? theme.primary : "#FF6B6B" },
+      ]}
+      edges={["top"]}
+    >
+      <View style={[styles.header, { backgroundColor: theme.primary }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
@@ -70,88 +111,55 @@ const AdminSettingsScreen = ({ navigation }) => {
           <Text style={styles.sectionTitle}>Thông báo</Text>
           <SettingItem
             icon="notifications"
-            title="Thông báo đơn hàng"
-            subtitle="Nhận thông báo khi có đơn hàng mới"
+            title={t("notifications")}
+            subtitle={t("viewAllPendingOrders")}
             color="#FFA500"
-            onPress={() =>
-              Alert.alert("Thông báo", "Tính năng đang được phát triển")
-            }
-          />
-          <SettingItem
-            icon="mail"
-            title="Thông báo Email"
-            subtitle="Gửi email cho đơn hàng mới"
-            color="#4A90E2"
-            onPress={() =>
-              Alert.alert("Thông báo", "Tính năng đang được phát triển")
-            }
+            onPress={() => navigation.navigate("AdminNotifications")}
           />
         </View>
 
         {/* Dữ liệu */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Dữ liệu</Text>
+          <Text style={styles.sectionTitle}>{t("dataManagement")}</Text>
           <SettingItem
             icon="cloud-download"
-            title="Sao lưu dữ liệu"
-            subtitle="Tải xuống dữ liệu của bạn"
+            title={t("backupData")}
+            subtitle={t("downloadYourData")}
             color="#28A745"
             onPress={() =>
-              Alert.alert("Thông báo", "Tính năng đang được phát triển")
+              Alert.alert(t("notification"), t("featureInDevelopment"))
             }
           />
           <SettingItem
             icon="trash"
-            title="Xóa bộ nhớ đệm"
-            subtitle="Giải phóng không gian lưu trữ"
+            title={t("clearCache")}
+            subtitle={t("freeStorage")}
             color="#E74C3C"
             onPress={handleClearCache}
           />
         </View>
 
-        {/* Bảo mật */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Bảo mật</Text>
-          <SettingItem
-            icon="finger-print"
-            title="Xác thực sinh trắc học"
-            subtitle="Sử dụng vân tay/khuôn mặt để đăng nhập"
-            color="#9C27B0"
-            onPress={() =>
-              Alert.alert("Thông báo", "Tính năng đang được phát triển")
-            }
-          />
-          <SettingItem
-            icon="shield-checkmark"
-            title="Xác thực 2 yếu tố"
-            subtitle="Tăng cường bảo mật tài khoản"
-            color="#17A2B8"
-            onPress={() =>
-              Alert.alert("Thông báo", "Tính năng đang được phát triển")
-            }
-          />
-        </View>
-
         {/* Giao diện */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Giao diện</Text>
+          <Text style={styles.sectionTitle}>{t("appearance")}</Text>
           <SettingItem
             icon="color-palette"
             title="Chủ đề"
-            subtitle="Chọn màu sắc giao diện"
-            color="#FF6B6B"
-            onPress={() =>
-              Alert.alert("Thông báo", "Tính năng đang được phát triển")
+            subtitle={
+              themes.find((t) => t.id === themeName)?.name ||
+              "Chọn màu sắc giao diện"
             }
+            color="#FF6B6B"
+            onPress={() => setThemeModalVisible(true)}
           />
           <SettingItem
             icon="language"
             title="Ngôn ngữ"
-            subtitle="Tiếng Việt"
-            color="#607D8B"
-            onPress={() =>
-              Alert.alert("Thông báo", "Tính năng đang được phát triển")
+            subtitle={
+              languages.find((l) => l.id === language)?.name || "Tiếng Việt"
             }
+            color="#607D8B"
+            onPress={() => setLanguageModalVisible(true)}
           />
         </View>
 
@@ -167,6 +175,95 @@ const AdminSettingsScreen = ({ navigation }) => {
           />
         </View>
       </ScrollView>
+
+      {/* Theme Modal */}
+      <Modal
+        visible={themeModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setThemeModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Chọn chủ đề</Text>
+              <TouchableOpacity onPress={() => setThemeModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalBody}>
+              {themes.map((themeItem) => (
+                <TouchableOpacity
+                  key={themeItem.id}
+                  style={[
+                    styles.themeOption,
+                    themeName === themeItem.id && styles.themeOptionActive,
+                  ]}
+                  onPress={() => handleThemeChange(themeItem.id)}
+                >
+                  <View
+                    style={[
+                      styles.themeColorBox,
+                      { backgroundColor: themeItem.color },
+                    ]}
+                  />
+                  <Text style={styles.themeOptionText}>{themeItem.name}</Text>
+                  {themeName === themeItem.id && (
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={24}
+                      color={themeItem.color}
+                    />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Language Modal */}
+      <Modal
+        visible={languageModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setLanguageModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Chọn ngôn ngữ</Text>
+              <TouchableOpacity onPress={() => setLanguageModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.modalBody}>
+              {languages.map((languageItem) => (
+                <TouchableOpacity
+                  key={languageItem.id}
+                  style={[
+                    styles.languageOption,
+                    language === languageItem.id && styles.languageOptionActive,
+                  ]}
+                  onPress={() => handleLanguageChange(languageItem.id)}
+                >
+                  <Text style={styles.languageIcon}>{languageItem.icon}</Text>
+                  <Text style={styles.languageOptionText}>
+                    {languageItem.name}
+                  </Text>
+                  {language === languageItem.id && (
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={24}
+                      color="#28A745"
+                    />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -174,10 +271,8 @@ const AdminSettingsScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#FF6B6B",
   },
   header: {
-    backgroundColor: "#FF6B6B",
     padding: 16,
     flexDirection: "row",
     alignItems: "center",
@@ -239,6 +334,81 @@ const styles = StyleSheet.create({
   settingSubtitle: {
     fontSize: 13,
     color: "#666",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: "#FFF",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: "70%",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#EEE",
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  modalBody: {
+    padding: 16,
+  },
+  themeOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: "#F5F5F5",
+    marginBottom: 12,
+  },
+  themeOptionActive: {
+    backgroundColor: "#FFF3E0",
+    borderWidth: 2,
+    borderColor: "#E58E26",
+  },
+  themeColorBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12,
+  },
+  themeOptionText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+  },
+  languageOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: "#F5F5F5",
+    marginBottom: 12,
+  },
+  languageOptionActive: {
+    backgroundColor: "#E8F5E9",
+    borderWidth: 2,
+    borderColor: "#28A745",
+  },
+  languageIcon: {
+    fontSize: 32,
+    marginRight: 12,
+  },
+  languageOptionText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
   },
 });
 

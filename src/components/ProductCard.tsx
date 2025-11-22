@@ -1,5 +1,12 @@
-import React from "react";
-import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+} from "react-native";
 
 type Props = {
   item: {
@@ -15,6 +22,8 @@ type Props = {
 
 const ProductCard = ({ item, onPress }: Props) => {
   const isOutOfStock = item.stock === 0;
+  const [imageLoading, setImageLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
 
   return (
     <TouchableOpacity
@@ -23,9 +32,25 @@ const ProductCard = ({ item, onPress }: Props) => {
       onPress={!isOutOfStock ? onPress : undefined} // ✅ chặn bấm
     >
       <View style={styles.imageWrap}>
+        {imageLoading && (
+          <View style={styles.imageLoader}>
+            <ActivityIndicator size="small" color="#E58E26" />
+          </View>
+        )}
         <Image
-          source={{ uri: item.imageUrl || "https://via.placeholder.com/100" }}
+          source={{
+            uri:
+              imageError || !item.imageUrl
+                ? "https://via.placeholder.com/100"
+                : item.imageUrl,
+          }}
           style={styles.image}
+          onLoadStart={() => setImageLoading(true)}
+          onLoadEnd={() => setImageLoading(false)}
+          onError={() => {
+            setImageLoading(false);
+            setImageError(true);
+          }}
         />
 
         {/* ✅ Hiển thị chữ “Hết hàng” đè lên ảnh */}
@@ -66,6 +91,18 @@ const styles = StyleSheet.create({
   imageWrap: {
     position: "relative",
     marginRight: 12,
+  },
+  imageLoader: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f2f2f2",
+    borderRadius: 10,
+    zIndex: 1,
   },
   image: {
     width: 90,
