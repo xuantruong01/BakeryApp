@@ -1,7 +1,16 @@
 // AI Service sử dụng Google Gemini API
-const GEMINI_API_KEY = "AIzaSyDIkuDRpMt5a9s_lidVYxNQRFv56zrvmFU"; // Thay bằng API key của bạn từ https://makersuite.google.com/app/apikey
+// API key được lưu an toàn trong file .env (không commit vào Git)
+const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
 const GEMINI_API_URL =
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+
+// Kiểm tra API key có tồn tại không
+if (!GEMINI_API_KEY) {
+  console.error(
+    "⚠️ GEMINI_API_KEY chưa được cấu hình! Vui lòng thêm vào file .env:\n" +
+    "EXPO_PUBLIC_GEMINI_API_KEY=your_api_key_here"
+  );
+}
 
 export interface Message {
   role: "user" | "assistant";
