@@ -7,10 +7,11 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  TextInput, // ✅ thêm import TextInput
+  TextInput,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons"; // ✅ sửa import Ionicons
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { doc, getDoc, setDoc, updateDoc, increment } from "firebase/firestore";
 import { db } from "../services/firebaseConfig";
@@ -70,252 +71,383 @@ export default function ProductDetailScreen({ route, navigation }: any) {
 
   /* ------------------- Render giao diện ------------------- */
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={{ paddingBottom: 100 }}
-      >
-        {/* 🔙 Nút quay lại */}
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.8}
+    <LinearGradient
+      colors={["#FFF5E6", "#FFE8CC", "#FFFFFF"]}
+      style={styles.gradient}
+    >
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={{ paddingBottom: 120 }}
+          showsVerticalScrollIndicator={false}
         >
-          <Ionicons name="chevron-back" size={24} color="#333" />
-          <Text style={styles.backText}>Quay lại</Text>
-        </TouchableOpacity>
-
-        {!!product.imageUrl && (
-          <Image
-            source={{ uri: product.imageUrl }}
-            style={styles.image}
-            resizeMode="cover"
-          />
-        )}
-
-        <View style={styles.body}>
-          <Text style={styles.name}>{product.name}</Text>
-          <Text style={styles.price}>
-            {Number(product.price).toLocaleString()} VND
-          </Text>
-
-          {/* 🧱 Bộ chọn số lượng */}
-          <View style={styles.qtyContainer}>
-            <Text style={styles.qtyLabel}>Số lượng</Text>
-
-            <View style={styles.qtyBox}>
-              {/* Giảm số lượng */}
-              <TouchableOpacity
-                style={styles.qtyBtn}
-                onPress={decrease}
-                disabled={quantity <= 1 || product.stock === 0}
-              >
-                <Text
-                  style={[
-                    styles.qtySymbol,
-                    (quantity <= 1 || product.stock === 0) && { color: "#bbb" },
-                  ]}
-                >
-                  −
-                </Text>
-              </TouchableOpacity>
-
-              {/* ✅ Ô nhập số lượng */}
-              <TextInput
-                style={styles.qtyInput}
-                keyboardType="numeric"
-                editable={product.stock > 0} // ❌ Không cho nhập nếu hết hàng
-                value={String(quantity)}
-                onChangeText={(text) => {
-                  const num = parseInt(text.replace(/[^0-9]/g, ""), 10);
-                  if (isNaN(num)) {
-                    setQuantity(1);
-                    return;
-                  }
-
-                  const maxStock = product.stock ?? 9999;
-                  if (num > maxStock) setQuantity(maxStock);
-                  else if (num < 1) setQuantity(1);
-                  else setQuantity(num);
-                }}
-              />
-
-              {/* Tăng số lượng */}
-              <TouchableOpacity
-                style={styles.qtyBtn}
-                onPress={increase}
-                disabled={
-                  product.stock === 0 || quantity >= (product.stock ?? 9999)
-                }
-              >
-                <Text
-                  style={[
-                    styles.qtySymbol,
-                    (product.stock === 0 ||
-                      quantity >= (product.stock ?? 9999)) && { color: "#bbb" },
-                  ]}
-                >
-                  +
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* ⚠️ Nếu hết hàng */}
-            {product.stock === 0 && (
-              <Text style={{ color: "red", marginTop: 4, fontSize: 13 }}>
-                Sản phẩm đã hết hàng
-              </Text>
-            )}
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="arrow-back" size={28} color="#924900" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Chi tiết sản phẩm</Text>
+            <View style={{ width: 28 }} />
           </View>
 
-          {/* Mô tả & tồn kho */}
-          <Text style={styles.section}>Mô tả</Text>
-          <Text style={styles.desc}>
-            {product.description || "Không có mô tả."}
-          </Text>
+          {/* Image Container */}
+          {!!product.imageUrl && (
+            <View style={styles.imageContainer}>
+              <Image
+                source={{ uri: product.imageUrl }}
+                style={styles.image}
+                resizeMode="cover"
+              />
+            </View>
+          )}
 
-          <Text style={styles.section}>Tồn kho</Text>
-          <Text>{product.stock ?? 0} sản phẩm</Text>
-        </View>
-      </ScrollView>
+          {/* Info Card */}
+          <View style={styles.infoCard}>
+            <Text style={styles.name}>{product.name}</Text>
+            
+            <View style={styles.priceRow}>
+              <Text style={styles.price}>
+                {Number(product.price).toLocaleString()}đ
+              </Text>
+              <View style={styles.stockBadge}>
+                <Ionicons 
+                  name={product.stock > 0 ? "checkmark-circle" : "close-circle"} 
+                  size={16} 
+                  color={product.stock > 0 ? "#4CAF50" : "#F44336"} 
+                />
+                <Text style={styles.stockText}>
+                  {product.stock > 0 ? `Còn ${product.stock}` : "Hết hàng"}
+                </Text>
+              </View>
+            </View>
 
-      {/* 🛒 Thanh hành động */}
-      <View style={styles.bottomBar}>
-        <View style={styles.buttonRow}>
-          <TouchableOpacity
-            style={[
-              styles.btnAddCart,
-              product.stock === 0 && { backgroundColor: "#ccc" },
-            ]}
-            onPress={addToCart}
-            activeOpacity={0.9}
-            disabled={product.stock === 0}
-          >
-            <Text style={styles.btnText}>
-              🛒 {product.stock === 0 ? "Hết hàng" : `Thêm ${quantity}`}
+            <View style={styles.divider} />
+
+            {/* Quantity Selector */}
+            <View style={styles.qtyContainer}>
+              <Text style={styles.qtyLabel}>Số lượng</Text>
+              <View style={styles.qtyBox}>
+                <TouchableOpacity
+                  style={styles.qtyBtn}
+                  onPress={decrease}
+                  disabled={quantity <= 1 || product.stock === 0}
+                >
+                  <Text
+                    style={[
+                      styles.qtySymbol,
+                      (quantity <= 1 || product.stock === 0) && styles.qtyDisabled,
+                    ]}
+                  >
+                    −
+                  </Text>
+                </TouchableOpacity>
+
+                <TextInput
+                  style={styles.qtyInput}
+                  keyboardType="numeric"
+                  editable={product.stock > 0}
+                  value={String(quantity)}
+                  onChangeText={(text) => {
+                    const num = parseInt(text.replace(/[^0-9]/g, ""), 10);
+                    if (isNaN(num)) {
+                      setQuantity(1);
+                      return;
+                    }
+                    const maxStock = product.stock ?? 9999;
+                    if (num > maxStock) setQuantity(maxStock);
+                    else if (num < 1) setQuantity(1);
+                    else setQuantity(num);
+                  }}
+                />
+
+                <TouchableOpacity
+                  style={styles.qtyBtn}
+                  onPress={increase}
+                  disabled={product.stock === 0 || quantity >= (product.stock ?? 9999)}
+                >
+                  <Text
+                    style={[
+                      styles.qtySymbol,
+                      (product.stock === 0 || quantity >= (product.stock ?? 9999)) &&
+                        styles.qtyDisabled,
+                    ]}
+                  >
+                    +
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            {/* Description */}
+            <Text style={styles.sectionTitle}>Mô tả sản phẩm</Text>
+            <Text style={styles.desc}>
+              {product.description || "Không có mô tả chi tiết."}
             </Text>
-          </TouchableOpacity>
+          </View>
+        </ScrollView>
+        {/* Bottom Bar */}
+        <View style={styles.bottomBar}>
+          <View style={styles.buttonRow}>
+            <TouchableOpacity
+              style={styles.btnWrapper}
+              onPress={addToCart}
+              activeOpacity={0.8}
+              disabled={product.stock === 0}
+            >
+              <LinearGradient
+                colors={product.stock === 0 ? ["#CCC", "#999"] : ["#E58E26", "#D67A1A"]}
+                style={styles.btnAddCart}
+              >
+                <Ionicons name="cart-outline" size={20} color="#FFF" />
+                <Text style={styles.btnText}>
+                  {product.stock === 0 ? "Hết hàng" : "Thêm vào giỏ"}
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[
-              styles.btnCheckout,
-              product.stock === 0 && { backgroundColor: "#ccc" },
-            ]}
-            onPress={() =>
-              navigation.navigate("Checkout", {
-                productDirect: { ...product, quantity },
-              })
-            }
-            activeOpacity={0.9}
-            disabled={product.stock === 0}
-          >
-            <Text style={styles.btnText}>
-              💳 {product.stock === 0 ? "Không thể đặt" : "Đặt ngay"}
-            </Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.btnWrapper}
+              onPress={() =>
+                navigation.navigate("Checkout", {
+                  productDirect: { ...product, quantity },
+                })
+              }
+              activeOpacity={0.8}
+              disabled={product.stock === 0}
+            >
+              <LinearGradient
+                colors={product.stock === 0 ? ["#CCC", "#999"] : ["#C06000", "#924900", "#6B3600"]}
+                style={styles.btnCheckout}
+              >
+                <Ionicons name="flash-outline" size={20} color="#FFF" />
+                <Text style={styles.btnText}>
+                  {product.stock === 0 ? "Không thể đặt" : "Mua ngay"}
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 /* ================== STYLES ================== */
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#fff" },
-  container: { flex: 1, backgroundColor: "#fff" },
+  gradient: { flex: 1 },
+  safeArea: { flex: 1 },
+  container: { flex: 1 },
 
-  backButton: {
+  header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
-    marginTop: 5,
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 15,
   },
-  backText: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#333",
-    marginLeft: 5,
+  backButton: {
+    padding: 5,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#924900",
   },
 
-  image: { width: "100%", height: 260, borderRadius: 10, marginTop: 12, marginHorizontal: 12 },
-  body: { padding: 16 },
-  name: { fontSize: 22, fontWeight: "700", color: "#333" },
-  price: { marginTop: 6, fontSize: 18, color: "#E58E26", fontWeight: "700" },
+  imageContainer: {
+    marginHorizontal: 20,
+    marginTop: 10,
+    borderRadius: 20,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  image: {
+    width: "100%",
+    height: 280,
+    backgroundColor: "#F5F5F5",
+  },
+
+  infoCard: {
+    backgroundColor: "#FFF",
+    borderRadius: 24,
+    padding: 24,
+    marginHorizontal: 20,
+    marginTop: 20,
+    shadowColor: "#924900",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: "#FFE8CC",
+  },
+
+  name: {
+    fontSize: 26,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 12,
+    letterSpacing: 0.3,
+  },
+
+  priceRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  price: {
+    fontSize: 28,
+    color: "#E58E26",
+    fontWeight: "bold",
+    letterSpacing: 0.5,
+  },
+  stockBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F5F5F5",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 4,
+  },
+  stockText: {
+    fontSize: 13,
+    color: "#666",
+    fontWeight: "600",
+  },
+
+  divider: {
+    height: 2,
+    backgroundColor: "#FFE8CC",
+    marginVertical: 20,
+  },
 
   qtyContainer: {
-    marginTop: 15,
-    flexDirection: "column",
-    alignItems: "flex-start",
+    marginBottom: 16,
   },
-  qtyLabel: { fontSize: 16, fontWeight: "600", color: "#333", marginBottom: 6 },
+  qtyLabel: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#333",
+    marginBottom: 12,
+    letterSpacing: 0.2,
+  },
   qtyBox: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f7f7f7",
-    borderRadius: 10,
-    paddingHorizontal: 8,
+    backgroundColor: "#FFFBF5",
+    borderRadius: 16,
+    paddingHorizontal: 6,
+    alignSelf: "flex-start",
+    borderWidth: 2,
+    borderColor: "#E8D5C4",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  qtyBtn: { paddingHorizontal: 12, paddingVertical: 6 },
-  qtySymbol: { fontSize: 20, fontWeight: "700", color: "#E58E26" },
+  qtyBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  qtySymbol: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#E58E26",
+  },
+  qtyDisabled: {
+    color: "#CCC",
+  },
   qtyInput: {
-    width: 45,
-    height: 36,
+    width: 60,
+    height: 44,
     textAlign: "center",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: "600",
     color: "#333",
-    marginHorizontal: 6,
-    paddingVertical: 4,
+    marginHorizontal: 8,
   },
 
-  section: { marginTop: 16, fontSize: 16, fontWeight: "700" },
-  desc: { marginTop: 6, color: "#555", lineHeight: 20 },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#333",
+    marginBottom: 10,
+    letterSpacing: 0.2,
+  },
+  desc: {
+    fontSize: 15,
+    color: "#666",
+    lineHeight: 24,
+  },
 
   bottomBar: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "#fff",
-    borderTopWidth: 1,
-    borderTopColor: "#eee",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    backgroundColor: "#FFF",
+    borderTopWidth: 2,
+    borderTopColor: "#FFE8CC",
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    paddingBottom: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 6,
   },
   buttonRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 12,
+    gap: 14,
+  },
+  btnWrapper: {
+    flex: 1,
   },
   btnAddCart: {
-    flex: 1,
-    backgroundColor: "#E58E26",
-    paddingVertical: 16,
-    borderRadius: 12,
+    flexDirection: "row",
+    paddingVertical: 18,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
-    height: 55,
-    marginRight: 6,
-    elevation: 2,
+    gap: 8,
+    shadowColor: "#E58E26",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
   },
   btnCheckout: {
-    flex: 1,
-    backgroundColor: "#924900",
-    paddingVertical: 16,
-    borderRadius: 12,
+    flexDirection: "row",
+    paddingVertical: 18,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
-    height: 55,
-    marginLeft: 6,
-    elevation: 2,
+    gap: 8,
+    shadowColor: "#924900",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
   },
   btnText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "700",
+    color: "#FFF",
+    fontSize: 17,
+    fontWeight: "bold",
     letterSpacing: 0.5,
   },
 });
