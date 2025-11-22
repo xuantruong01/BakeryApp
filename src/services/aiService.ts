@@ -1,9 +1,7 @@
 // AI Service sử dụng Google Gemini API
-const GEMINI_API_KEY = "AIzaSyBs4KJFKu6ym5jr0N0z1rxMvR9pbPzSokQ"; // Thay bằng API key của bạn từ https://makersuite.google.com/app/apikey
+const GEMINI_API_KEY = "AIzaSyDIkuDRpMt5a9s_lidVYxNQRFv56zrvmFU"; // Thay bằng API key của bạn từ https://makersuite.google.com/app/apikey
 const GEMINI_API_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent";
-
-
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
 export interface Message {
   role: "user" | "assistant";
@@ -40,10 +38,11 @@ export const buildContextFromHistory = (
   if (products.length > 0) {
     context += `DANH SÁCH SẢN PHẨM HIỆN CÓ:\n`;
     products.forEach((p) => {
-      const priceStr = typeof p.price === 'number' ? p.price.toString() : p.price;
-      context += `- ${p.name}: ${parseInt(priceStr).toLocaleString()}đ (${p.category})${
-        p.description ? " - " + p.description : ""
-      }\n`;
+      const priceStr =
+        typeof p.price === "number" ? p.price.toString() : p.price;
+      context += `- ${p.name}: ${parseInt(priceStr).toLocaleString()}đ (${
+        p.category
+      })${p.description ? " - " + p.description : ""}\n`;
     });
     context += `\n`;
   }
@@ -89,7 +88,9 @@ export const sendMessageToAI = async (
     if (conversationHistory.length > 0) {
       fullPrompt += `LỊCH SỬ HỘI THOẠI:\n`;
       conversationHistory.slice(-3).forEach((msg) => {
-        fullPrompt += `${msg.role === "user" ? "Khách" : "Bot"}: ${msg.content}\n`;
+        fullPrompt += `${msg.role === "user" ? "Khách" : "Bot"}: ${
+          msg.content
+        }\n`;
       });
       fullPrompt += `\n`;
     }
@@ -137,7 +138,7 @@ export const sendMessageToAI = async (
 
     if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
       const fullText = data.candidates[0].content.parts[0].text.trim();
-      
+
       // Tách text và products
       const parts = fullText.split("PRODUCTS:");
       const text = parts[0].trim();
@@ -146,16 +147,17 @@ export const sendMessageToAI = async (
       if (parts.length > 1) {
         const productNames = parts[1]
           .split("\n")
-          .map(name => name.trim())
-          .filter(name => name.length > 0);
+          .map((name) => name.trim())
+          .filter((name) => name.length > 0);
 
         // Tìm sản phẩm trong danh sách
-        productNames.forEach(name => {
-          const found = allProducts.find(p => 
-            p.name.toLowerCase().includes(name.toLowerCase()) ||
-            name.toLowerCase().includes(p.name.toLowerCase())
+        productNames.forEach((name) => {
+          const found = allProducts.find(
+            (p) =>
+              p.name.toLowerCase().includes(name.toLowerCase()) ||
+              name.toLowerCase().includes(p.name.toLowerCase())
           );
-          if (found && !suggestedProducts.find(p => p.id === found.id)) {
+          if (found && !suggestedProducts.find((p) => p.id === found.id)) {
             suggestedProducts.push(found);
           }
         });
@@ -164,15 +166,15 @@ export const sendMessageToAI = async (
       return { text, suggestedProducts };
     }
 
-    return { 
-      text: "Xin lỗi, tôi không thể trả lời câu hỏi này lúc này.", 
-      suggestedProducts: [] 
+    return {
+      text: "Xin lỗi, tôi không thể trả lời câu hỏi này lúc này.",
+      suggestedProducts: [],
     };
   } catch (error) {
     console.error("Error calling Gemini API:", error);
-    return { 
-      text: "Đã xảy ra lỗi khi kết nối với AI. Vui lòng thử lại sau.", 
-      suggestedProducts: [] 
+    return {
+      text: "Đã xảy ra lỗi khi kết nối với AI. Vui lòng thử lại sau.",
+      suggestedProducts: [],
     };
   }
 };
@@ -196,7 +198,10 @@ export const generateAutoSuggestions = async (
   const purchasedItems = new Map<string, number>();
   orderHistory.forEach((order) => {
     order.items.forEach((item) => {
-      purchasedItems.set(item.name, (purchasedItems.get(item.name) || 0) + item.quantity);
+      purchasedItems.set(
+        item.name,
+        (purchasedItems.get(item.name) || 0) + item.quantity
+      );
     });
   });
 

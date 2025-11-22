@@ -276,7 +276,6 @@ export default function CheckoutScreen() {
         }
       }
 
-      Alert.alert("🎉 Thành công", "Đơn hàng đã được đặt!");
       navigation.navigate("MainTabs", { screen: "Home" });
     } catch (error) {
       console.error("❌ Lỗi khi đặt hàng:", error);

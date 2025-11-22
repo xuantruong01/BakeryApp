@@ -166,19 +166,28 @@ const HomeScreen = () => {
         // Tính toán chiều dài thực tế của content
         const totalContentWidth = width * pages.length;
         const containerWidth = width - 80; // width - padding (40 + 40)
-        
+
         // Chiều dài scrollbar tính dựa trên ratio: container / totalContent
-        const scrollbarLength = (containerWidth / totalContentWidth) * containerWidth;
-        
+        const scrollbarLength =
+          (containerWidth / totalContentWidth) * containerWidth;
+
         // Khoảng trống còn lại để thumb di chuyển
-        const maxScrollbarPosition = Math.max(0, containerWidth - scrollbarLength);
-        
+        const maxScrollbarPosition = Math.max(
+          0,
+          containerWidth - scrollbarLength
+        );
+
         // Vị trí của thumb
-        const scrollableDistance = Math.max(0, totalContentWidth - containerWidth);
+        const scrollableDistance = Math.max(
+          0,
+          totalContentWidth - containerWidth
+        );
         if (scrollableDistance > 0) {
           const ratio = value / scrollableDistance;
           const thumbPosition = ratio * maxScrollbarPosition;
-          categoryProgressWidth.setValue(Math.min(thumbPosition, maxScrollbarPosition));
+          categoryProgressWidth.setValue(
+            Math.min(thumbPosition, maxScrollbarPosition)
+          );
         }
       }
     });
@@ -190,19 +199,27 @@ const HomeScreen = () => {
     const { nativeEvent } = event;
     const x = nativeEvent.locationX;
     const containerWidth = width - 80;
-    
+
     if (pages.length > 0) {
       const totalContentWidth = width * pages.length;
-      const scrollbarLength = (containerWidth / totalContentWidth) * containerWidth;
-      const maxScrollbarPosition = Math.max(0, containerWidth - scrollbarLength);
-      
+      const scrollbarLength =
+        (containerWidth / totalContentWidth) * containerWidth;
+      const maxScrollbarPosition = Math.max(
+        0,
+        containerWidth - scrollbarLength
+      );
+
       // Hạn chế x trong phạm vi [0, maxScrollbarPosition]
       const limitedX = Math.max(0, Math.min(x, maxScrollbarPosition));
-      
+
       // Tính toán vị trí scroll dựa trên vị trí scrollbar
-      const scrollableDistance = Math.max(0, totalContentWidth - containerWidth);
-      const targetScrollX = (limitedX / maxScrollbarPosition) * scrollableDistance;
-      
+      const scrollableDistance = Math.max(
+        0,
+        totalContentWidth - containerWidth
+      );
+      const targetScrollX =
+        (limitedX / maxScrollbarPosition) * scrollableDistance;
+
       categoryFlatListRef.current?.scrollToOffset({
         offset: targetScrollX,
         animated: true,
@@ -306,28 +323,6 @@ const HomeScreen = () => {
                 )}
               </View>
 
-          {/* Gợi ý món hot */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>🔥 Gợi ý cho bạn</Text>
-            <View style={styles.gridWrap}>
-              {hotProducts.map((item) => (
-                <TouchableOpacity
-                  key={item.id}
-                  style={styles.hotItem}
-                  onPress={() =>
-                    navigation.navigate("ProductDetail" as any, {
-                      product: item,
-                    })
-                  }
-                >
-                  <Image
-                    source={{
-                      uri: item.imageUrl || "https://via.placeholder.com/100",
-                    }}
-                    style={styles.hotImage}
-                  />
-                  <Text numberOfLines={2} style={styles.hotName}>
-                    {item.name}
               <View style={styles.card}>
                 {history.length === 0 ? (
                   <Text style={{ color: "#8C7A5A" }}>
@@ -344,7 +339,11 @@ const HomeScreen = () => {
                         }}
                         style={styles.historyItem}
                       >
-                        <Ionicons name="time-outline" size={16} color="#B08968" />
+                        <Ionicons
+                          name="time-outline"
+                          size={16}
+                          color="#B08968"
+                        />
                         <Text style={styles.historyText}>{term}</Text>
                       </TouchableOpacity>
                     ))}
@@ -352,56 +351,29 @@ const HomeScreen = () => {
                 )}
               </View>
             </View>
-          </View>
-        </ScrollView>
-      ) : (
-        /* ============ TRANG HOME GỐC (giữ nguyên như trước) ============ */
-        <ScrollView showsVerticalScrollIndicator={false}>
-          {/* Banner: lấy 5 sản phẩm đầu làm banner */}
-          <BannerCarousel
-            data={hotProducts.slice(0, 5)}
-            onPressItem={() => {}}
-          />
-
-          {/* Danh mục (2 hàng × 4, lướt theo trang) */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>🎂 Danh mục nổi bật</Text>
-
-            <FlatList
-              data={pages}
-              keyExtractor={(_, index) => `page-${index}`}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              pagingEnabled
-              snapToInterval={width}
-              decelerationRate="fast"
-              renderItem={({ item }) => (
-                <View style={styles.categoryPage}>
-                  {item.map((cat) => (
 
             {/* Gợi ý món hot */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>🔥 Gợi ý cho bạn</Text>
-              <View style={[styles.card, { paddingHorizontal: 10, marginTop: 12 }]}>
+              <View
+                style={[styles.card, { paddingHorizontal: 10, marginTop: 12 }]}
+              >
                 <View style={styles.gridWrap}>
                   {hotProducts.map((item) => (
                     <TouchableOpacity
                       key={item.id}
                       style={styles.hotItem}
                       onPress={() =>
-                        (navigation.getParent("rootStack") ??
-                          navigation.getParent()?.getParent())?.navigate(
-                          "ProductDetail",
-                          { product: item }
-                        )
+                        (
+                          navigation.getParent("rootStack") ??
+                          navigation.getParent()?.getParent()
+                        )?.navigate("ProductDetail", { product: item })
                       }
                     >
                       <Image
                         source={{
                           uri:
-                            cat.imageUrl || "https://via.placeholder.com/100",
-                            item.imageUrl ||
-                            "https://via.placeholder.com/100",
+                            item.imageUrl || "https://via.placeholder.com/100",
                         }}
                         style={styles.hotImage}
                       />
@@ -425,11 +397,10 @@ const HomeScreen = () => {
               <BannerCarousel
                 data={hotProducts.slice(0, 5)}
                 onPressItem={(item) =>
-                  (navigation.getParent("rootStack") ??
-                    navigation.getParent()?.getParent())?.navigate(
-                    "ProductDetail",
-                    { product: item }
-                  )
+                  (
+                    navigation.getParent("rootStack") ??
+                    navigation.getParent()?.getParent()
+                  )?.navigate("ProductDetail", { product: item })
                 }
               />
             </View>
@@ -440,20 +411,6 @@ const HomeScreen = () => {
                 <Text style={styles.sectionTitle}>🎂 Danh mục nổi bật</Text>
               </View>
 
-          {/* Món hot trong tuần (5 sp đầu) */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>🔥 Món hot trong tuần</Text>
-            <FlatList
-              data={hotProducts.slice(0, 5)}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <ProductCard
-                  item={item}
-                  onPress={() =>
-                    navigation.navigate("ProductDetail" as any, {
-                      product: item,
-                    })
-                  }
               <View style={styles.card}>
                 <FlatList
                   ref={categoryFlatListRef}
@@ -472,14 +429,13 @@ const HomeScreen = () => {
                           activeOpacity={0.85}
                           style={styles.categoryItem}
                           onPress={() =>
-                            (navigation.getParent("rootStack") ??
-                              navigation.getParent()?.getParent())?.navigate(
-                              "CategoryProducts",
-                              {
-                                categoryId: cat.categoryId,
-                                categoryName: cat.name,
-                              }
-                            )
+                            (
+                              navigation.getParent("rootStack") ??
+                              navigation.getParent()?.getParent()
+                            )?.navigate("CategoryProducts", {
+                              categoryId: cat.categoryId,
+                              categoryName: cat.name,
+                            })
                           }
                         >
                           <Image
@@ -490,10 +446,7 @@ const HomeScreen = () => {
                             }}
                             style={styles.categoryImage}
                           />
-                          <Text
-                            style={styles.categoryName}
-                            numberOfLines={1}
-                          >
+                          <Text style={styles.categoryName} numberOfLines={1}>
                             {cat.name}
                           </Text>
                         </TouchableOpacity>
@@ -518,7 +471,9 @@ const HomeScreen = () => {
                       style={[
                         styles.progressBarThumb,
                         {
-                          width: ((width - 80) / (width * pages.length)) * (width - 80),
+                          width:
+                            ((width - 80) / (width * pages.length)) *
+                            (width - 80),
                           transform: [
                             {
                               translateX: categoryProgressWidth,
@@ -545,11 +500,10 @@ const HomeScreen = () => {
                     <ProductCard
                       item={item}
                       onPress={() =>
-                        (navigation.getParent("rootStack") ??
-                          navigation.getParent()?.getParent())?.navigate(
-                          "ProductDetail",
-                          { product: item }
-                        )
+                        (
+                          navigation.getParent("rootStack") ??
+                          navigation.getParent()?.getParent()
+                        )?.navigate("ProductDetail", { product: item })
                       }
                     />
                   )}
