@@ -51,7 +51,7 @@ export default function AppNavigator() {
 
   return (
     <Stack.Navigator id={"rootStack"} screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="MainTabs" component={TabNavigator} />
+      <Stack.Screen name="MainTabs" component={MainComponent} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="SignUp" component={SignUpScreen} />
 
