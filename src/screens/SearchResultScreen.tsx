@@ -9,8 +9,13 @@ import {
   SafeAreaView,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { useNavigation, useRoute, CommonActions } from "@react-navigation/native";
+import {
+  useNavigation,
+  useRoute,
+  CommonActions,
+} from "@react-navigation/native";
 import ProductCard from "../components/ProductCard";
+import { useApp } from "../contexts/AppContext";
 
 /* ---------- Types ---------- */
 type Product = {
@@ -44,6 +49,7 @@ function relevanceScore(p: Product, q: string) {
 
 /* ---------- Main Screen ---------- */
 export default function SearchResultScreen() {
+  const { theme, t } = useApp();
   const navigation = useNavigation<any>();
   const route = useRoute();
   const { term, results: initialResults } = (route.params || {}) as {
@@ -52,9 +58,9 @@ export default function SearchResultScreen() {
   };
 
   const [search, setSearch] = useState(term || "");
-  const [sortBy, setSortBy] = useState<"relevance" | "priceAsc" | "priceDesc" | "nameAsc">(
-    "relevance"
-  );
+  const [sortBy, setSortBy] = useState<
+    "relevance" | "priceAsc" | "priceDesc" | "nameAsc"
+  >("relevance");
 
   const q = normalizeVN(search);
 
@@ -104,13 +110,13 @@ export default function SearchResultScreen() {
           }}
           style={styles.iconLeft}
         >
-          <Ionicons name="arrow-back" size={22} color="#333" />
+          <Ionicons name="arrow-back" size={22} color={theme.text} />
         </TouchableOpacity>
 
         <TextInput
-          placeholder="Tìm bánh bạn yêu thích..."
-          placeholderTextColor="#888"
-          style={styles.searchInput}
+          placeholder={t("searchPlaceholder")}
+          placeholderTextColor={theme.text + "80"}
+          style={[styles.searchInput, { color: theme.text }]}
           value={search}
           onChangeText={setSearch}
           returnKeyType="search"
@@ -118,7 +124,7 @@ export default function SearchResultScreen() {
         />
 
         <TouchableOpacity onPress={handleSearch} style={styles.iconRight}>
-          <Ionicons name="search" size={22} color="#E58E26" />
+          <Ionicons name="search" size={22} color={theme.primary} />
         </TouchableOpacity>
       </View>
 
@@ -126,17 +132,19 @@ export default function SearchResultScreen() {
       <View style={styles.toolbar}>
         <ScrollChip
           options={[
-            { key: "relevance", label: "Liên quan" },
-            { key: "priceAsc", label: "Giá ↑" },
-            { key: "priceDesc", label: "Giá ↓" },
-            { key: "nameAsc", label: "Tên A→Z" },
+            { key: "relevance", label: t("sortBy") },
+            { key: "priceAsc", label: t("priceAsc") },
+            { key: "priceDesc", label: t("priceDesc") },
+            { key: "nameAsc", label: t("nameAsc") },
           ]}
           value={sortBy}
           onChange={(v) =>
             setSortBy(v as "relevance" | "priceAsc" | "priceDesc" | "nameAsc")
           }
         />
-        <Text style={styles.resultCount}>{filtered.length} sản phẩm</Text>
+        <Text style={[styles.resultCount, { color: theme.text }]}>
+          {filtered.length} sản phẩm
+        </Text>
       </View>
 
       {/* ----- Danh sách kết quả ----- */}
@@ -148,11 +156,10 @@ export default function SearchResultScreen() {
           <ProductCard
             item={item}
             onPress={() =>
-              (navigation.getParent("rootStack") ??
-                navigation.getParent()?.getParent())?.navigate(
-                "ProductDetail",
-                { product: item }
-              )
+              (
+                navigation.getParent("rootStack") ??
+                navigation.getParent()?.getParent()
+              )?.navigate("ProductDetail", { product: item })
             }
           />
         )}
@@ -187,7 +194,10 @@ function ScrollChip({
           <TouchableOpacity
             key={opt.key}
             onPress={() => onChange(opt.key)}
-            style={[styles.chip, active && styles.chipActive]}
+            style={[
+              styles.chip,
+              active && [styles.chipActive, { backgroundColor: theme.primary }],
+            ]}
           >
             <Text style={[styles.chipText, active && styles.chipTextActive]}>
               {opt.label}
@@ -201,17 +211,15 @@ function ScrollChip({
 
 /* ---------- Styles ---------- */
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#fff" },
+  safe: { flex: 1 },
 
   /* Thanh tìm kiếm */
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
     marginHorizontal: 20,
-    backgroundColor: "#f5f5f5",
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#eee",
     paddingHorizontal: 10,
     marginBottom: 10,
     marginTop: 10,
@@ -231,10 +239,9 @@ const styles = StyleSheet.create({
   chip: {
     paddingVertical: 6,
     paddingHorizontal: 10,
-    backgroundColor: "#f2f2f2",
     borderRadius: 20,
   },
-  chipActive: { backgroundColor: "#E58E26" },
+  chipActive: {},
   chipText: { color: "#333", fontWeight: "600", fontSize: 12 },
   chipTextActive: { color: "#fff" },
 

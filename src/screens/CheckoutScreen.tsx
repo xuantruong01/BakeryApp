@@ -28,12 +28,15 @@ import { useRoute, useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useApp } from "../contexts/AppContext";
 
 export default function CheckoutScreen() {
+  const { theme, t } = useApp();
   const route = useRoute();
   const navigation = useNavigation<any>();
   const directProduct = (route.params as any)?.productDirect;
   const reorderData = (route.params as any)?.reorderData;
+  const selectedItems = (route.params as any)?.selectedItems;
 
   const [user, setUser] = useState<any>(null);
   const [name, setName] = useState("");
@@ -47,7 +50,9 @@ export default function CheckoutScreen() {
   const [paymentProof, setPaymentProof] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 
-  const convertImageToBase64 = async (imageUri: string): Promise<string | null> => {
+  const convertImageToBase64 = async (
+    imageUri: string
+  ): Promise<string | null> => {
     try {
       setUploading(true);
       const response = await fetch(imageUri);
@@ -81,8 +86,20 @@ export default function CheckoutScreen() {
   };
 
   const banks = [
-    { id: "mb", name: "MB Bank", bin: "970422", account: "0986966745", owner: "NGUYEN BA SON" },
-    { id: "tpb", name: "TPBank", bin: "970423", account: "0389832067", owner: "LE THIEN DINH" },
+    {
+      id: "mb",
+      name: "MB Bank",
+      bin: "970422",
+      account: "0986966745",
+      owner: "NGUYEN BA SON",
+    },
+    {
+      id: "tpb",
+      name: "TPBank",
+      bin: "970423",
+      account: "0389832067",
+      owner: "LE THIEN DINH",
+    },
   ];
 
   useEffect(() => {
@@ -107,7 +124,25 @@ export default function CheckoutScreen() {
         } else if (directProduct) {
           setCartItems([directProduct]);
           setTotal(parseInt(directProduct.price) * directProduct.quantity);
-          
+
+          const addressRef = doc(db, "addresses", userData.uid);
+          const addressSnap = await getDoc(addressRef);
+          if (addressSnap.exists()) {
+            const data = addressSnap.data();
+            setName(data.name || "");
+            setAddress(data.address || "");
+            setPhone(data.phone || "");
+          }
+        } else if (selectedItems && selectedItems.length > 0) {
+          // Xử lý sản phẩm đã chọn từ CartScreen
+          setCartItems(selectedItems);
+          setTotal(
+            selectedItems.reduce(
+              (sum: number, i: any) => sum + parseInt(i.price) * i.quantity,
+              0
+            )
+          );
+
           const addressRef = doc(db, "addresses", userData.uid);
           const addressSnap = await getDoc(addressRef);
           if (addressSnap.exists()) {
@@ -119,9 +154,14 @@ export default function CheckoutScreen() {
         } else {
           const itemsRef = collection(db, "carts", userData.uid, "items");
           const itemsSnap = await getDocs(itemsRef);
-          const items = itemsSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as any[];
+          const items = itemsSnap.docs.map((d) => ({
+            id: d.id,
+            ...d.data(),
+          })) as any[];
           setCartItems(items);
-          setTotal(items.reduce((sum, i) => sum + parseInt(i.price) * i.quantity, 0));
+          setTotal(
+            items.reduce((sum, i) => sum + parseInt(i.price) * i.quantity, 0)
+          );
 
           const addressRef = doc(db, "addresses", userData.uid);
           const addressSnap = await getDoc(addressRef);
@@ -139,7 +179,7 @@ export default function CheckoutScreen() {
       }
     };
     fetchData();
-  }, [directProduct, reorderData]);
+  }, [directProduct, reorderData, selectedItems]);
 
   const handleConfirm = async () => {
     if (!name.trim() || !address.trim() || !phone.trim()) {
@@ -159,7 +199,11 @@ export default function CheckoutScreen() {
 
     try {
       const addressRef = doc(db, "addresses", user.uid);
-      await setDoc(addressRef, { name, address, phone, updatedAt: new Date().toISOString() }, { merge: true });
+      await setDoc(
+        addressRef,
+        { name, address, phone, updatedAt: new Date().toISOString() },
+        { merge: true }
+      );
 
       const orderData: any = {
         userId: user.uid,
@@ -204,15 +248,26 @@ export default function CheckoutScreen() {
       }
 
       if (!directProduct && !reorderData) {
-        const itemsRef = collection(db, "carts", user.uid, "items");
-        const itemsSnap = await getDocs(itemsRef);
-        for (const item of itemsSnap.docs) {
-          await deleteDoc(doc(db, "carts", user.uid, "items", item.id));
+        // Nếu có selectedItems, chỉ xóa những sản phẩm đã chọn
+        if (selectedItems && selectedItems.length > 0) {
+          for (const item of selectedItems) {
+            await deleteDoc(doc(db, "carts", user.uid, "items", item.id));
+          }
+        } else {
+          // Nếu không có selectedItems, xóa toàn bộ giỏ hàng
+          const itemsRef = collection(db, "carts", user.uid, "items");
+          const itemsSnap = await getDocs(itemsRef);
+          for (const item of itemsSnap.docs) {
+            await deleteDoc(doc(db, "carts", user.uid, "items", item.id));
+          }
         }
       }
 
       Alert.alert("✅ Thành công!", "Đơn hàng đã được đặt thành công!", [
-        { text: "OK", onPress: () => navigation.navigate("MainTabs", { screen: "Home" }) }
+        {
+          text: "OK",
+          onPress: () => navigation.navigate("MainTabs", { screen: "Home" }),
+        },
       ]);
     } catch (error) {
       console.error("Lỗi khi đặt hàng:", error);
@@ -222,11 +277,16 @@ export default function CheckoutScreen() {
 
   if (loading) {
     return (
-      <LinearGradient colors={["#FFF5E6", "#FFE8CC", "#FFFFFF"]} style={{ flex: 1 }}>
+      <LinearGradient
+        colors={[theme.lightBg, theme.background, theme.lightBg]}
+        style={{ flex: 1 }}
+      >
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.center}>
-            <ActivityIndicator size="large" color="#924900" />
-            <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
+            <ActivityIndicator size="large" color={theme.primary} />
+            <Text style={[styles.loadingText, { color: theme.text }]}>
+              {t("loadingData")}
+            </Text>
           </View>
         </SafeAreaView>
       </LinearGradient>
@@ -234,14 +294,20 @@ export default function CheckoutScreen() {
   }
 
   return (
-    <LinearGradient colors={["#FFF5E6", "#FFE8CC", "#FFFFFF"]} style={{ flex: 1 }}>
+    <LinearGradient
+      colors={[theme.lightBg, theme.background, theme.lightBg]}
+      style={{ flex: 1 }}
+    >
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={28} color="#924900" />
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={28} color={theme.primary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>
-            {reorderData ? "Mua lại đơn hàng" : "Xác nhận đặt hàng"}
+          <Text style={[styles.headerTitle, { color: theme.text }]}>
+            {reorderData ? t("reorder") : t("checkoutPage")}
           </Text>
           <View style={{ width: 28 }} />
         </View>
@@ -251,158 +317,432 @@ export default function CheckoutScreen() {
           contentContainerStyle={{ paddingBottom: 100 }}
           ListHeaderComponent={
             <>
-              <View style={styles.card}>
+              <View
+                style={[
+                  styles.card,
+                  {
+                    backgroundColor: theme.background,
+                    borderColor: theme.lightBg,
+                  },
+                ]}
+              >
                 <View style={styles.cardHeader}>
-                  <Ionicons name="person-outline" size={22} color="#924900" />
-                  <Text style={styles.cardTitle}>Thông tin giao hàng</Text>
+                  <Ionicons
+                    name="person-outline"
+                    size={22}
+                    color={theme.primary}
+                  />
+                  <Text style={[styles.cardTitle, { color: theme.text }]}>
+                    {t("recipientInfo")}
+                  </Text>
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Họ và tên</Text>
+                  <Text style={[styles.label, { color: theme.text }]}>
+                    {t("recipientName")}
+                  </Text>
                   <TextInput
-                    style={styles.input}
+                    style={[
+                      styles.input,
+                      {
+                        color: theme.text,
+                        borderColor: theme.primary + "40",
+                        backgroundColor: theme.background,
+                      },
+                    ]}
                     value={name}
                     onChangeText={setName}
-                    placeholder="Nhập họ tên..."
-                    placeholderTextColor="#999"
+                    placeholder={t("recipientName")}
+                    placeholderTextColor={theme.text + "60"}
                   />
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Số điện thoại</Text>
+                  <Text style={[styles.label, { color: theme.text }]}>
+                    {t("recipientPhone")}
+                  </Text>
                   <TextInput
-                    style={styles.input}
+                    style={[
+                      styles.input,
+                      {
+                        color: theme.text,
+                        borderColor: theme.primary + "40",
+                        backgroundColor: theme.background,
+                      },
+                    ]}
                     value={phone}
                     onChangeText={setPhone}
-                    placeholder="Nhập số điện thoại..."
+                    placeholder={t("enterPhone")}
                     keyboardType="phone-pad"
-                    placeholderTextColor="#999"
+                    placeholderTextColor={theme.text + "60"}
                   />
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Địa chỉ giao hàng</Text>
+                  <Text style={[styles.label, { color: theme.text }]}>
+                    {t("shippingAddress")}
+                  </Text>
                   <TextInput
-                    style={[styles.input, styles.textArea]}
+                    style={[
+                      styles.input,
+                      styles.textArea,
+                      {
+                        color: theme.text,
+                        borderColor: theme.primary + "40",
+                        backgroundColor: theme.background,
+                      },
+                    ]}
                     value={address}
                     onChangeText={setAddress}
                     multiline
                     numberOfLines={3}
-                    placeholder="Nhập địa chỉ nhận hàng..."
-                    placeholderTextColor="#999"
+                    placeholder={t("enterAddress")}
+                    placeholderTextColor={theme.text + "60"}
                   />
                 </View>
               </View>
 
-              <View style={styles.card}>
+              <View
+                style={[
+                  styles.card,
+                  {
+                    backgroundColor: theme.background,
+                    borderColor: theme.lightBg,
+                  },
+                ]}
+              >
                 <View style={styles.cardHeader}>
-                  <Ionicons name="card-outline" size={22} color="#924900" />
-                  <Text style={styles.cardTitle}>Phương thức thanh toán</Text>
+                  <Ionicons
+                    name="card-outline"
+                    size={22}
+                    color={theme.primary}
+                  />
+                  <Text style={[styles.cardTitle, { color: theme.text }]}>
+                    {t("paymentMethod")}
+                  </Text>
                 </View>
 
                 <TouchableOpacity
-                  style={[styles.paymentOption, paymentMethod === "cash" && styles.paymentOptionActive]}
+                  style={[
+                    styles.paymentOption,
+                    {
+                      backgroundColor: theme.background,
+                      borderColor: theme.lightBg,
+                    },
+                    paymentMethod === "cash" && [
+                      styles.paymentOptionActive,
+                      { borderColor: theme.primary },
+                    ],
+                  ]}
                   onPress={() => setPaymentMethod("cash")}
                 >
                   <View style={styles.paymentRow}>
                     <Ionicons
-                      name={paymentMethod === "cash" ? "radio-button-on" : "radio-button-off"}
+                      name={
+                        paymentMethod === "cash"
+                          ? "radio-button-on"
+                          : "radio-button-off"
+                      }
                       size={24}
-                      color={paymentMethod === "cash" ? "#E58E26" : "#999"}
+                      color={
+                        paymentMethod === "cash"
+                          ? theme.primary
+                          : theme.text + "60"
+                      }
                     />
                     <View style={styles.paymentInfo}>
-                      <Text style={styles.paymentTitle}>Tiền mặt khi nhận hàng</Text>
-                      <Text style={styles.paymentDesc}>Thanh toán khi nhận hàng</Text>
+                      <Text
+                        style={[styles.paymentTitle, { color: theme.text }]}
+                      >
+                        {t("cashOnDelivery")}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.paymentDesc,
+                          { color: theme.text + "80" },
+                        ]}
+                      >
+                        {t("payOnDelivery")}
+                      </Text>
                     </View>
                   </View>
-                  <Ionicons name="cash-outline" size={28} color="#28A745" />
+                  <Ionicons
+                    name="cash-outline"
+                    size={28}
+                    color={theme.secondary}
+                  />
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.paymentOption, paymentMethod === "bank" && styles.paymentOptionActive]}
+                  style={[
+                    styles.paymentOption,
+                    {
+                      backgroundColor: theme.background,
+                      borderColor: theme.lightBg,
+                    },
+                    paymentMethod === "bank" && [
+                      styles.paymentOptionActive,
+                      { borderColor: theme.primary },
+                    ],
+                  ]}
                   onPress={() => setPaymentMethod("bank")}
                 >
                   <View style={styles.paymentRow}>
                     <Ionicons
-                      name={paymentMethod === "bank" ? "radio-button-on" : "radio-button-off"}
+                      name={
+                        paymentMethod === "bank"
+                          ? "radio-button-on"
+                          : "radio-button-off"
+                      }
                       size={24}
-                      color={paymentMethod === "bank" ? "#E58E26" : "#999"}
+                      color={
+                        paymentMethod === "bank"
+                          ? theme.primary
+                          : theme.text + "60"
+                      }
                     />
                     <View style={styles.paymentInfo}>
-                      <Text style={styles.paymentTitle}>Chuyển khoản ngân hàng</Text>
-                      <Text style={styles.paymentDesc}>Quét mã QR để thanh toán</Text>
+                      <Text
+                        style={[styles.paymentTitle, { color: theme.text }]}
+                      >
+                        {t("bankTransfer")}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.paymentDesc,
+                          { color: theme.text + "80" },
+                        ]}
+                      >
+                        {t("scanQRToPay")}
+                      </Text>
                     </View>
                   </View>
-                  <Ionicons name="card-outline" size={28} color="#2196F3" />
+                  <Ionicons
+                    name="card-outline"
+                    size={28}
+                    color={theme.accent}
+                  />
                 </TouchableOpacity>
 
                 {paymentMethod === "bank" && (
-                  <View style={styles.bankSelection}>
-                    <Text style={styles.bankSelectionTitle}>Chọn ngân hàng:</Text>
+                  <View
+                    style={[
+                      styles.bankSelection,
+                      {
+                        backgroundColor: theme.lightBg,
+                        borderColor: theme.lightBg,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[styles.bankSelectionTitle, { color: theme.text }]}
+                    >
+                      {t("selectBank")}:
+                    </Text>
                     {banks.map((bank) => (
                       <TouchableOpacity
                         key={bank.id}
-                        style={[styles.bankOption, selectedBank === bank.id && styles.bankOptionActive]}
+                        style={[
+                          styles.bankOption,
+                          {
+                            backgroundColor: theme.background,
+                            borderColor: theme.lightBg,
+                          },
+                          selectedBank === bank.id && [
+                            styles.bankOptionActive,
+                            { borderColor: theme.primary },
+                          ],
+                        ]}
                         onPress={() => setSelectedBank(bank.id)}
                       >
                         <Ionicons
-                          name={selectedBank === bank.id ? "checkbox" : "square-outline"}
+                          name={
+                            selectedBank === bank.id
+                              ? "checkbox"
+                              : "square-outline"
+                          }
                           size={24}
-                          color={selectedBank === bank.id ? "#E58E26" : "#999"}
+                          color={
+                            selectedBank === bank.id
+                              ? theme.primary
+                              : theme.text + "60"
+                          }
                         />
-                        <Text style={styles.bankName}>{bank.name}</Text>
+                        <Text style={[styles.bankName, { color: theme.text }]}>
+                          {bank.name}
+                        </Text>
                       </TouchableOpacity>
                     ))}
 
                     {selectedBank && (
-                      <View style={styles.bankDetails}>
+                      <View
+                        style={[
+                          styles.bankDetails,
+                          {
+                            backgroundColor: theme.background,
+                            borderColor: theme.primary,
+                          },
+                        ]}
+                      >
                         {banks
                           .filter((b) => b.id === selectedBank)
                           .map((bank) => (
                             <View key={bank.id}>
-                              <Text style={styles.bankDetailTitle}>Thông tin chuyển khoản:</Text>
+                              <Text
+                                style={[
+                                  styles.bankDetailTitle,
+                                  { color: theme.primary },
+                                ]}
+                              >
+                                {t("bankTransferInfo")}:
+                              </Text>
                               <View style={styles.bankDetailRow}>
-                                <Text style={styles.bankDetailLabel}>Ngân hàng:</Text>
-                                <Text style={styles.bankDetailValue}>{bank.name}</Text>
+                                <Text
+                                  style={[
+                                    styles.bankDetailLabel,
+                                    { color: theme.text + "80" },
+                                  ]}
+                                >
+                                  {t("bank")}:
+                                </Text>
+                                <Text
+                                  style={[
+                                    styles.bankDetailValue,
+                                    { color: theme.text },
+                                  ]}
+                                >
+                                  {bank.name}
+                                </Text>
                               </View>
                               <View style={styles.bankDetailRow}>
-                                <Text style={styles.bankDetailLabel}>Số tài khoản:</Text>
-                                <Text style={[styles.bankDetailValue, { fontWeight: "bold" }]}>{bank.account}</Text>
+                                <Text
+                                  style={[
+                                    styles.bankDetailLabel,
+                                    { color: theme.text + "80" },
+                                  ]}
+                                >
+                                  {t("accountNumber")}:
+                                </Text>
+                                <Text
+                                  style={[
+                                    styles.bankDetailValue,
+                                    { fontWeight: "bold", color: theme.text },
+                                  ]}
+                                >
+                                  {bank.account}
+                                </Text>
                               </View>
                               <View style={styles.bankDetailRow}>
-                                <Text style={styles.bankDetailLabel}>Chủ tài khoản:</Text>
-                                <Text style={styles.bankDetailValue}>{bank.owner}</Text>
+                                <Text
+                                  style={[
+                                    styles.bankDetailLabel,
+                                    { color: theme.text + "80" },
+                                  ]}
+                                >
+                                  {t("accountHolder")}:
+                                </Text>
+                                <Text
+                                  style={[
+                                    styles.bankDetailValue,
+                                    { color: theme.text },
+                                  ]}
+                                >
+                                  {bank.owner}
+                                </Text>
                               </View>
                               <View style={styles.bankDetailRow}>
-                                <Text style={styles.bankDetailLabel}>Số tiền:</Text>
-                                <Text style={[styles.bankDetailValue, { color: "#E58E26", fontWeight: "bold" }]}>
+                                <Text
+                                  style={[
+                                    styles.bankDetailLabel,
+                                    { color: theme.text + "80" },
+                                  ]}
+                                >
+                                  {t("amount")}:
+                                </Text>
+                                <Text
+                                  style={[
+                                    styles.bankDetailValue,
+                                    {
+                                      color: theme.primary,
+                                      fontWeight: "bold",
+                                    },
+                                  ]}
+                                >
                                   {total.toLocaleString()}đ
                                 </Text>
                               </View>
 
-                              <View style={styles.qrContainer}>
-                                <Text style={styles.qrTitle}>Quét mã QR để thanh toán:</Text>
+                              <View
+                                style={[
+                                  styles.qrContainer,
+                                  {
+                                    backgroundColor: theme.lightBg,
+                                    borderColor: theme.lightBg,
+                                  },
+                                ]}
+                              >
+                                <Text
+                                  style={[
+                                    styles.qrTitle,
+                                    { color: theme.primary },
+                                  ]}
+                                >
+                                  {t("scanQRToPay")}:
+                                </Text>
                                 <Image
                                   source={{
-                                    uri: `https://img.vietqr.io/image/${bank.bin}-${bank.account}-compact2.png?amount=${total}&addInfo=${encodeURIComponent("Thanh toan don hang")}&accountName=${encodeURIComponent(bank.owner)}`,
+                                    uri: `https://img.vietqr.io/image/${
+                                      bank.bin
+                                    }-${
+                                      bank.account
+                                    }-compact2.png?amount=${total}&addInfo=${encodeURIComponent(
+                                      "Thanh toan don hang"
+                                    )}&accountName=${encodeURIComponent(
+                                      bank.owner
+                                    )}`,
                                   }}
                                   style={styles.qrImage}
                                   resizeMode="contain"
                                 />
-                                <Text style={styles.qrNote}>
-                                  Quét mã QR bằng ứng dụng ngân hàng để thanh toán tự động
+                                <Text
+                                  style={[
+                                    styles.qrNote,
+                                    { color: theme.text + "80" },
+                                  ]}
+                                >
+                                  {t("qrScanNote")}
                                 </Text>
                               </View>
 
                               <View style={{ marginTop: 16 }}>
-                                <Text style={styles.label}>Ảnh xác nhận chuyển khoản (bắt buộc):</Text>
+                                <Text
+                                  style={[styles.label, { color: theme.text }]}
+                                >
+                                  {t("paymentProof")} ({t("required")}):
+                                </Text>
                                 {paymentProof && (
-                                  <Image source={{ uri: paymentProof }} style={styles.proofImage} />
+                                  <Image
+                                    source={{ uri: paymentProof }}
+                                    style={styles.proofImage}
+                                  />
                                 )}
-                                <TouchableOpacity style={styles.uploadButton} onPress={pickPaymentProof} disabled={uploading}>
-                                  <Ionicons name="cloud-upload-outline" size={20} color="#FFF" />
+                                <TouchableOpacity
+                                  style={[
+                                    styles.uploadButton,
+                                    { backgroundColor: theme.secondary },
+                                  ]}
+                                  onPress={pickPaymentProof}
+                                  disabled={uploading}
+                                >
+                                  <Ionicons
+                                    name="cloud-upload-outline"
+                                    size={20}
+                                    color="#FFF"
+                                  />
                                   <Text style={styles.uploadText}>
-                                    {paymentProof ? "Chọn lại ảnh" : "Tải ảnh xác nhận"}
+                                    {paymentProof
+                                      ? t("changeImage")
+                                      : t("uploadProof")}
                                   </Text>
                                 </TouchableOpacity>
                               </View>
@@ -414,10 +754,24 @@ export default function CheckoutScreen() {
                 )}
               </View>
 
-              <View style={styles.card}>
+              <View
+                style={[
+                  styles.card,
+                  {
+                    backgroundColor: theme.background,
+                    borderColor: theme.lightBg,
+                  },
+                ]}
+              >
                 <View style={styles.cardHeader}>
-                  <Ionicons name="cart-outline" size={22} color="#924900" />
-                  <Text style={styles.cardTitle}>Sản phẩm đặt hàng</Text>
+                  <Ionicons
+                    name="cart-outline"
+                    size={22}
+                    color={theme.primary}
+                  />
+                  <Text style={[styles.cardTitle, { color: theme.text }]}>
+                    {t("orderProducts")}
+                  </Text>
                 </View>
               </View>
             </>
@@ -425,19 +779,51 @@ export default function CheckoutScreen() {
           data={cartItems}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <View style={styles.item}>
+            <View
+              style={[
+                styles.item,
+                {
+                  backgroundColor: theme.background,
+                  borderColor: theme.lightBg,
+                },
+              ]}
+            >
               <View style={styles.itemInfo}>
-                <Text style={styles.itemName}>{item.name}</Text>
-                <Text style={styles.itemQuantity}>Số lượng: {item.quantity}</Text>
+                <Text style={[styles.itemName, { color: theme.text }]}>
+                  {item.name}
+                </Text>
+                <Text
+                  style={[styles.itemQuantity, { color: theme.text + "80" }]}
+                >
+                  {t("quantity")}: {item.quantity}
+                </Text>
               </View>
-              <Text style={styles.itemPrice}>{(parseInt(item.price) * item.quantity).toLocaleString()}đ</Text>
+              <Text style={[styles.itemPrice, { color: theme.primary }]}>
+                {(parseInt(item.price) * item.quantity).toLocaleString()}đ
+              </Text>
             </View>
           )}
           ListFooterComponent={
             <>
-              <View style={styles.totalContainer}>
-                <Text style={styles.totalLabel}>Tổng cộng:</Text>
-                <Text style={styles.totalPrice}>{total.toLocaleString()}đ</Text>
+              <View
+                style={[
+                  styles.totalContainer,
+                  {
+                    backgroundColor: theme.lightBg,
+                    borderColor: theme.lightBg,
+                  },
+                  {
+                    backgroundColor: theme.background,
+                    borderColor: theme.lightBg,
+                  },
+                ]}
+              >
+                <Text style={[styles.totalLabel, { color: theme.text }]}>
+                  {t("total")}:
+                </Text>
+                <Text style={[styles.totalPrice, { color: theme.primary }]}>
+                  {total.toLocaleString()}đ
+                </Text>
               </View>
               <TouchableOpacity
                 style={styles.confirmBtn}
@@ -445,11 +831,15 @@ export default function CheckoutScreen() {
                 disabled={uploading}
               >
                 <LinearGradient
-                  colors={["#E58E26", "#D67A1A", "#C06000"]}
+                  colors={theme.aiGradient as any}
                   style={styles.confirmGradient}
                 >
-                  <Ionicons name="checkmark-circle-outline" size={24} color="#FFF" />
-                  <Text style={styles.confirmText}>Xác nhận đặt hàng</Text>
+                  <Ionicons
+                    name="checkmark-circle-outline"
+                    size={24}
+                    color="#FFF"
+                  />
+                  <Text style={styles.confirmText}>{t("confirmOrder")}</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </>
@@ -463,7 +853,7 @@ export default function CheckoutScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  loadingText: { marginTop: 12, fontSize: 16, color: "#666" },
+  loadingText: { marginTop: 12, fontSize: 16 },
 
   header: {
     flexDirection: "row",
@@ -474,21 +864,19 @@ const styles = StyleSheet.create({
     paddingBottom: 15,
   },
   backButton: { padding: 5 },
-  headerTitle: { fontSize: 20, fontWeight: "bold", color: "#924900" },
+  headerTitle: { fontSize: 20, fontWeight: "bold" },
 
   card: {
-    backgroundColor: "#FFF",
     borderRadius: 20,
     padding: 20,
     marginHorizontal: 20,
     marginTop: 16,
-    shadowColor: "#924900",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 6,
     borderWidth: 1,
-    borderColor: "#FFE8CC",
   },
 
   cardHeader: {
@@ -501,7 +889,6 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#924900",
     letterSpacing: 0.3,
   },
 
@@ -510,18 +897,14 @@ const styles = StyleSheet.create({
     fontSize: 15,
     marginBottom: 10,
     fontWeight: "700",
-    color: "#333",
     letterSpacing: 0.2,
   },
 
   input: {
     borderWidth: 2,
-    borderColor: "#E8D5C4",
     borderRadius: 14,
     padding: 16,
     fontSize: 15,
-    backgroundColor: "#FFFBF5",
-    color: "#333",
     fontWeight: "500",
   },
 
@@ -532,9 +915,7 @@ const styles = StyleSheet.create({
   },
 
   paymentOption: {
-    backgroundColor: "#FFFFFF",
     borderWidth: 2,
-    borderColor: "#E8D5C4",
     borderRadius: 16,
     padding: 18,
     marginBottom: 14,
@@ -549,10 +930,8 @@ const styles = StyleSheet.create({
   },
 
   paymentOptionActive: {
-    borderColor: "#E58E26",
-    backgroundColor: "#FFF8F0",
     borderWidth: 3,
-    shadowColor: "#E58E26",
+    shadowColor: "#000",
     shadowOpacity: 0.2,
     elevation: 5,
   },
@@ -568,28 +947,23 @@ const styles = StyleSheet.create({
   paymentTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#333",
     marginBottom: 4,
   },
 
   paymentDesc: {
     fontSize: 13,
-    color: "#666",
   },
 
   bankSelection: {
-    backgroundColor: "#FFFBF5",
     borderRadius: 16,
     padding: 18,
     marginTop: 12,
     borderWidth: 1,
-    borderColor: "#FFE8CC",
   },
 
   bankSelectionTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#333",
     marginBottom: 14,
     letterSpacing: 0.2,
   },
@@ -598,39 +972,31 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     padding: 14,
-    backgroundColor: "#FFF",
     borderRadius: 12,
     marginBottom: 10,
     borderWidth: 2,
-    borderColor: "#E8D5C4",
     gap: 12,
   },
 
   bankOptionActive: {
-    borderColor: "#E58E26",
-    backgroundColor: "#FFF8F0",
     borderWidth: 3,
   },
 
   bankName: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#333",
   },
 
   bankDetails: {
     marginTop: 16,
-    backgroundColor: "#FFF",
     borderRadius: 16,
     padding: 20,
     borderWidth: 2,
-    borderColor: "#E58E26",
   },
 
   bankDetailTitle: {
     fontSize: 17,
     fontWeight: "bold",
-    color: "#E58E26",
     marginBottom: 16,
   },
 
@@ -642,29 +1008,24 @@ const styles = StyleSheet.create({
 
   bankDetailLabel: {
     fontSize: 14,
-    color: "#666",
   },
 
   bankDetailValue: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#333",
   },
 
   qrContainer: {
     marginTop: 20,
     alignItems: "center",
-    backgroundColor: "#FFFBF5",
     borderRadius: 16,
     padding: 20,
     borderWidth: 2,
-    borderColor: "#FFE8CC",
   },
 
   qrTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#924900",
     marginBottom: 16,
   },
 
@@ -673,12 +1034,10 @@ const styles = StyleSheet.create({
     height: 260,
     marginBottom: 16,
     borderRadius: 12,
-    backgroundColor: "#FFF",
   },
 
   qrNote: {
     fontSize: 12,
-    color: "#666",
     textAlign: "center",
     fontStyle: "italic",
   },
@@ -688,12 +1047,10 @@ const styles = StyleSheet.create({
     height: 180,
     borderRadius: 12,
     marginBottom: 12,
-    backgroundColor: "#F5F5F5",
   },
 
   uploadButton: {
     flexDirection: "row",
-    backgroundColor: "#E58E26",
     padding: 14,
     borderRadius: 12,
     alignItems: "center",
@@ -708,7 +1065,6 @@ const styles = StyleSheet.create({
   },
 
   item: {
-    backgroundColor: "#FFF",
     borderRadius: 16,
     padding: 18,
     marginHorizontal: 20,
@@ -716,37 +1072,32 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    shadowColor: "#924900",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
     elevation: 3,
     borderWidth: 1,
-    borderColor: "#FFE8CC",
   },
 
   itemInfo: { flex: 1 },
   itemName: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#333",
     marginBottom: 6,
   },
 
   itemQuantity: {
     fontSize: 14,
-    color: "#666",
   },
 
   itemPrice: {
     fontSize: 17,
     fontWeight: "bold",
-    color: "#E58E26",
     marginLeft: 12,
   },
 
   totalContainer: {
-    backgroundColor: "#FFF8F0",
     padding: 20,
     marginHorizontal: 20,
     marginTop: 16,
@@ -755,19 +1106,16 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     borderWidth: 2,
-    borderColor: "#FFE8CC",
   },
 
   totalLabel: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#333",
   },
 
   totalPrice: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#924900",
   },
 
   confirmBtn: {
@@ -775,7 +1123,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     borderRadius: 16,
     overflow: "hidden",
-    shadowColor: "#E58E26",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.4,
     shadowRadius: 12,

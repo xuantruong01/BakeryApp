@@ -4,15 +4,19 @@ import HomeScreen from "../screens/HomeScreen";
 import CartScreen from "../screens/CartScreen";
 import AccountScreen from "../screens/AccountScreen";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { useApp } from "../contexts/AppContext";
+
 const Tab = createBottomTabNavigator();
 
 export default function TabNavigator() {
+  const { theme, t } = useApp();
+
   return (
     <Tab.Navigator
       id={undefined}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#924900",
+        tabBarActiveTintColor: theme.primary,
         tabBarHideOnKeyboard: true,
         lazy: true,
       }}
@@ -21,6 +25,7 @@ export default function TabNavigator() {
         name="Home"
         component={HomeScreen}
         options={{
+          tabBarLabel: t("home"),
           tabBarIcon: ({ color }) => (
             <FontAwesome name="home" size={24} color={color} />
           ),
@@ -30,6 +35,7 @@ export default function TabNavigator() {
         name="Cart"
         component={CartScreen}
         options={{
+          tabBarLabel: t("cart"),
           tabBarIcon: ({ color }) => (
             <FontAwesome name="shopping-cart" size={24} color={color} />
           ),
@@ -39,6 +45,7 @@ export default function TabNavigator() {
         name="Account"
         component={AccountScreen}
         options={{
+          tabBarLabel: t("account"),
           tabBarIcon: ({ color }) => (
             <FontAwesome name="user" size={24} color={color} />
           ),

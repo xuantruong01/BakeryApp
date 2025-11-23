@@ -7,13 +7,17 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../../services/firebaseConfig";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useApp } from "../../contexts/AppContext";
 
 const AdminHomeScreen = ({ navigation }) => {
+  const { theme, t } = useApp();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState({
@@ -28,8 +32,27 @@ const AdminHomeScreen = ({ navigation }) => {
   });
 
   useEffect(() => {
-    fetchDashboardData();
+    checkAuthAndFetchData();
   }, []);
+
+  const checkAuthAndFetchData = async () => {
+    try {
+      const storedUser = await AsyncStorage.getItem("user");
+      if (!storedUser) {
+        Alert.alert("Chưa đăng nhập", "Vui lòng đăng nhập để tiếp tục", [
+          {
+            text: "OK",
+            onPress: () => navigation.replace("Login"),
+          },
+        ]);
+        return;
+      }
+      fetchDashboardData();
+    } catch (error) {
+      console.error("Error checking auth:", error);
+      navigation.replace("Login");
+    }
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -110,37 +133,42 @@ const AdminHomeScreen = ({ navigation }) => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#FF6B6B" />
+        <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: theme.primary }]}
+      edges={["top"]}
+    >
       <ScrollView
         style={styles.container}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Dashboard Quản Trị</Text>
-          <Text style={styles.headerSubtitle}>Tổng quan hoạt động</Text>
+        <View style={[styles.header, { backgroundColor: theme.primary }]}>
+          <Text style={styles.headerTitle}>{t("dashboard")}</Text>
+          <Text style={styles.headerSubtitle}>{t("overview")}</Text>
         </View>
 
         {/* Thống kê đơn hàng */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Đơn Hàng</Text>
+          <Text style={styles.sectionTitle}>{t("orders")}</Text>
           <StatCard
             icon="cart"
-            title="Tổng đơn hàng"
+            title={t("totalOrders")}
             value={stats.totalOrders}
             color="#4A90E2"
-            onPress={() => navigation.navigate("AdminOrders")}
+            onPress={() =>
+              navigation.navigate("AdminOrders", { filter: "all" })
+            }
           />
           <StatCard
             icon="time"
-            title="Chờ xác nhận"
+            title={t("pending")}
             value={stats.pendingOrders}
             color="#FFA500"
             onPress={() =>
@@ -149,7 +177,7 @@ const AdminHomeScreen = ({ navigation }) => {
           />
           <StatCard
             icon="sync"
-            title="Đang xử lý"
+            title={t("processing")}
             value={stats.processingOrders}
             color="#17A2B8"
             onPress={() =>
@@ -158,16 +186,17 @@ const AdminHomeScreen = ({ navigation }) => {
           />
           <StatCard
             icon="checkmark-circle"
-            title="Hoàn thành"
+            title={t("completed")}
             value={stats.completedOrders}
             color="#28A745"
             onPress={() =>
               navigation.navigate("AdminOrders", { filter: "completed" })
             }
           />
+
           <StatCard
             icon="close-circle"
-            title="Đã hủy"
+            title={t("cancelled")}
             value={stats.cancelledOrders}
             color="#DC3545"
             onPress={() =>
@@ -178,10 +207,10 @@ const AdminHomeScreen = ({ navigation }) => {
 
         {/* Doanh thu */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Doanh Thu</Text>
+          <Text style={styles.sectionTitle}>{t("revenue")}</Text>
           <StatCard
             icon="cash"
-            title="Tổng doanh thu"
+            title={t("totalRevenue")}
             value={`${stats.totalRevenue.toLocaleString("vi-VN")}đ`}
             color="#28A745"
           />
@@ -189,17 +218,17 @@ const AdminHomeScreen = ({ navigation }) => {
 
         {/* Sản phẩm & Khách hàng */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quản Lý</Text>
+          <Text style={styles.sectionTitle}>{t("management")}</Text>
           <StatCard
             icon="cube"
-            title="Tổng sản phẩm"
+            title={t("totalProducts")}
             value={stats.totalProducts}
             color="#9B59B6"
             onPress={() => navigation.navigate("AdminProducts")}
           />
           <StatCard
             icon="people"
-            title="Khách hàng"
+            title={t("customers")}
             value={stats.totalCustomers}
             color="#E74C3C"
           />
@@ -212,11 +241,9 @@ const AdminHomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#FF6B6B",
   },
   container: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
   },
   loadingContainer: {
     flex: 1,
@@ -225,7 +252,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#F5F5F5",
   },
   header: {
-    backgroundColor: "#FF6B6B",
     padding: 24,
     paddingTop: 48,
   },

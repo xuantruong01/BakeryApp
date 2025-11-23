@@ -1,4 +1,4 @@
-import  { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -13,8 +13,10 @@ import {
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../services/firebaseConfig";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { useApp } from "../contexts/AppContext";
 
 const AddAddressScreen = ({ route, navigation }: any) => {
+  const { theme, t } = useApp();
   const { userId } = route.params;
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -35,11 +37,11 @@ const AddAddressScreen = ({ route, navigation }: any) => {
         // Lấy thông tin user từ Firestore
         const userRef = doc(db, "users", userId);
         const userSnap = await getDoc(userRef);
-        
+
         // Lấy địa chỉ từ Firestore (nếu có)
         const addressRef = doc(db, "addresses", userId);
         const addressSnap = await getDoc(addressRef);
-        
+
         if (addressSnap.exists()) {
           // Nếu đã có địa chỉ, lấy toàn bộ thông tin đã lưu
           const data = addressSnap.data();
@@ -68,18 +70,18 @@ const AddAddressScreen = ({ route, navigation }: any) => {
     let newErrors: any = { name: "", phone: "", address: "" };
 
     if (!name.trim()) {
-      newErrors.name = "Vui lòng nhập họ và tên.";
+      newErrors.name = t("nameRequired");
       valid = false;
     }
     if (!phone.trim()) {
-      newErrors.phone = "Vui lòng nhập số điện thoại.";
+      newErrors.phone = t("phoneRequired");
       valid = false;
     } else if (!/^(0[0-9]{9})$/.test(phone)) {
-      newErrors.phone = "Số điện thoại không hợp lệ (10 chữ số, bắt đầu bằng 0).";
+      newErrors.phone = t("phoneInvalid");
       valid = false;
     }
     if (!address.trim()) {
-      newErrors.address = "Vui lòng nhập địa chỉ chi tiết.";
+      newErrors.address = t("addressRequired");
       valid = false;
     }
 
@@ -100,11 +102,11 @@ const AddAddressScreen = ({ route, navigation }: any) => {
         updatedAt: new Date(),
       });
 
-      Alert.alert("Thành công", "Đã lưu địa chỉ giao hàng!");
+      Alert.alert("✅ " + t("addressSaved"), t("addressSaved"));
       navigation.goBack();
     } catch (error) {
       console.error("Lỗi khi lưu địa chỉ:", error);
-      Alert.alert( "Lỗi", "Không thể lưu địa chỉ. Vui lòng thử lại.");
+      Alert.alert("❌ " + t("addressError"), t("addressError"));
     } finally {
       setLoading(false); // 👈 Dừng tải (dù thành công hay lỗi)
     }
@@ -119,19 +121,24 @@ const AddAddressScreen = ({ route, navigation }: any) => {
     >
       {/* --- Header --- */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={28} color="#924900" />
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={28} color={theme.primary} />
         </TouchableOpacity>
-        <Text style={styles.title}>Thông tin giao hàng</Text>
-        
+        <Text style={[styles.title, { color: theme.text }]}>
+          {t("addressManagement")}
+        </Text>
       </View>
 
       {/* Thông báo cho tài khoản mới */}
       {isNewAddress && (
-        <View style={styles.infoBox}>
-          <Ionicons name="information-circle" size={20} color="#924900" />
-          <Text style={styles.infoText}>
-            Tên và số điện thoại được lấy từ tài khoản của bạn. Vui lòng nhập địa chỉ giao hàng.
+        <View style={[styles.infoBox, { backgroundColor: theme.lightBg }]}>
+          <Ionicons name="information-circle" size={20} color={theme.primary} />
+          <Text style={[styles.infoText, { color: theme.text }]}>
+            {t("fullName")} và {t("phone")} được lấy từ tài khoản của bạn. Vui
+            lòng nhập {t("shippingAddress").toLowerCase()}.
           </Text>
         </View>
       )}
@@ -140,28 +147,46 @@ const AddAddressScreen = ({ route, navigation }: any) => {
       <View style={styles.formContainer}>
         {/* --- Ô nhập họ tên --- */}
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Họ và tên</Text>
+          <Text style={[styles.label, { color: theme.text }]}>
+            {t("recipientName")}
+          </Text>
           <TextInput
-            style={[styles.input, errors.name ? styles.inputError : null]}
+            style={[
+              styles.input,
+              { color: theme.text, borderColor: theme.primary + "40" },
+              errors.name ? styles.inputError : null,
+            ]}
             placeholder="Ví dụ: Nguyễn Văn A"
+            placeholderTextColor={theme.text + "60"}
             value={name}
             onChangeText={(text) => {
               setName(text);
               setErrors((prev) => ({ ...prev, name: "" }));
             }}
           />
-          {errors.name ? <Text style={styles.errorText}>{errors.name}</Text> : null}
+          {errors.name ? (
+            <Text style={styles.errorText}>{errors.name}</Text>
+          ) : null}
           {!errors.name && name && (
-            <Text style={styles.hintText}>Tên người nhận hàng</Text>
+            <Text style={[styles.hintText, { color: theme.text + "70" }]}>
+              {t("recipientName")}
+            </Text>
           )}
         </View>
 
         {/* --- Ô nhập số điện thoại --- */}
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Số điện thoại</Text>
+          <Text style={[styles.label, { color: theme.text }]}>
+            {t("recipientPhone")}
+          </Text>
           <TextInput
-            style={[styles.input, errors.phone ? styles.inputError : null]}
+            style={[
+              styles.input,
+              { color: theme.text, borderColor: theme.primary + "40" },
+              errors.phone ? styles.inputError : null,
+            ]}
             placeholder="Ví dụ: 0901234567"
+            placeholderTextColor={theme.text + "60"}
             keyboardType="phone-pad"
             value={phone}
             onChangeText={(text) => {
@@ -169,18 +194,30 @@ const AddAddressScreen = ({ route, navigation }: any) => {
               setErrors((prev) => ({ ...prev, phone: "" }));
             }}
           />
-          {errors.phone ? <Text style={styles.errorText}>{errors.phone}</Text> : null}
+          {errors.phone ? (
+            <Text style={styles.errorText}>{errors.phone}</Text>
+          ) : null}
           {!errors.phone && phone && (
-            <Text style={styles.hintText}>Số điện thoại liên hệ</Text>
+            <Text style={[styles.hintText, { color: theme.text + "70" }]}>
+              {t("recipientPhone")}
+            </Text>
           )}
         </View>
 
         {/* --- Ô nhập địa chỉ --- */}
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Địa chỉ chi tiết <Text style={styles.required}>*</Text></Text>
+          <Text style={[styles.label, { color: theme.text }]}>
+            {t("shippingAddress")} <Text style={styles.required}>*</Text>
+          </Text>
           <TextInput
-            style={[styles.input, styles.textArea, errors.address ? styles.inputError : null]}
-            placeholder="Số nhà, đường, phường, quận, thành phố..."
+            style={[
+              styles.input,
+              styles.textArea,
+              { color: theme.text, borderColor: theme.primary + "40" },
+              errors.address ? styles.inputError : null,
+            ]}
+            placeholder={t("enterAddress")}
+            placeholderTextColor={theme.text + "60"}
             multiline
             numberOfLines={4}
             value={address}
@@ -189,23 +226,31 @@ const AddAddressScreen = ({ route, navigation }: any) => {
               setErrors((prev) => ({ ...prev, address: "" }));
             }}
           />
-          {errors.address ? <Text style={styles.errorText}>{errors.address}</Text> : null}
+          {errors.address ? (
+            <Text style={styles.errorText}>{errors.address}</Text>
+          ) : null}
           {!errors.address && !address && (
-            <Text style={styles.hintText}>Nhập địa chỉ nhận hàng đầy đủ</Text>
+            <Text style={[styles.hintText, { color: theme.text + "70" }]}>
+              {t("enterAddress")}
+            </Text>
           )}
         </View>
       </View>
 
       {/* --- Nút lưu --- */}
       <TouchableOpacity
-        style={[styles.saveButton, loading && styles.saveButtonDisabled]}
+        style={[
+          styles.saveButton,
+          { backgroundColor: theme.primary },
+          loading && styles.saveButtonDisabled,
+        ]}
         onPress={handleSave}
         disabled={loading}
       >
         {loading ? (
           <ActivityIndicator size="small" color="#FFFFFF" />
         ) : (
-          <Text style={styles.saveText}> Lưu địa chỉ</Text>
+          <Text style={styles.saveText}>{t("saveAddress")}</Text>
         )}
       </TouchableOpacity>
     </ScrollView>
@@ -218,8 +263,7 @@ export default AddAddressScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-        backgroundColor: "#FFF8F0", // 👈 Màu nền kem (chủ đề tiệm bánh),
-    marginTop: 30
+    marginTop: 30,
   },
   contentContainer: {
     flexGrow: 1,
@@ -240,23 +284,19 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: "bold",
-    color: "#924900",
     textAlign: "center",
   },
   infoBox: {
     flexDirection: "row",
-    backgroundColor: "#FFF3E0",
     borderRadius: 10,
     padding: 12,
     marginBottom: 20,
     borderLeftWidth: 4,
-    borderLeftColor: "#924900",
     alignItems: "center",
   },
   infoText: {
     flex: 1,
     fontSize: 14,
-    color: "#924900",
     marginLeft: 10,
     lineHeight: 20,
   },
@@ -269,18 +309,14 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#A15807", // 👈 Màu nâu nhạt hơn
     marginBottom: 8,
   },
   input: {
-    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     paddingHorizontal: 15,
     paddingVertical: 14,
     fontSize: 16,
-    color: "#333",
     borderWidth: 1,
-    borderColor: "#F0E9E0", // 👈 Border rất nhạt
     // Thêm Shadow (bóng mờ)
     ...Platform.select({
       ios: {
@@ -310,7 +346,6 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   hintText: {
-    color: "#924900",
     marginTop: 6,
     marginLeft: 4,
     fontSize: 13,
@@ -329,7 +364,7 @@ const styles = StyleSheet.create({
     // Thêm Shadow cho nút
     ...Platform.select({
       ios: {
-        shadowColor: "#924900",
+        shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 5,

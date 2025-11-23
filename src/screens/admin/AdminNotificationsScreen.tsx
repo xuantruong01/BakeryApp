@@ -10,10 +10,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
+import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../../services/firebaseConfig";
+import { useApp } from "../../contexts/AppContext";
 
 const AdminNotificationsScreen = ({ navigation }) => {
+  const { theme, t } = useApp();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -25,18 +27,25 @@ const AdminNotificationsScreen = ({ navigation }) => {
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      // Lấy các đơn hàng pending
+      // Lấy các đơn hàng pending (không dùng orderBy để tránh cần composite index)
       const ordersQuery = query(
         collection(db, "orders"),
-        where("status", "==", "pending"),
-        orderBy("createdAt", "desc")
+        where("status", "==", "pending")
       );
       const ordersSnapshot = await getDocs(ordersQuery);
-      const notificationsData = ordersSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        type: "new_order",
-        ...doc.data(),
-      }));
+
+      // Sort ở client theo createdAt descending
+      const notificationsData = ordersSnapshot.docs
+        .map((doc) => ({
+          id: doc.id,
+          type: "new_order",
+          ...doc.data(),
+        }))
+        .sort((a: any, b: any) => {
+          const aTime = a.createdAt?.toDate?.() || new Date(a.createdAt || 0);
+          const bTime = b.createdAt?.toDate?.() || new Date(b.createdAt || 0);
+          return bTime.getTime() - aTime.getTime();
+        });
 
       setNotifications(notificationsData);
     } catch (error) {
@@ -53,10 +62,9 @@ const AdminNotificationsScreen = ({ navigation }) => {
   };
 
   const handleNotificationPress = (notification) => {
-    // Điều hướng đến trang đơn hàng với filter pending
-    navigation.navigate("AdminOrders", {
-      filter: "pending",
-      highlightOrderId: notification.id,
+    // Điều hướng đến trang chi tiết đơn hàng
+    navigation.navigate("OrderDetail", {
+      orderId: notification.id,
     });
   };
 
@@ -112,14 +120,17 @@ const AdminNotificationsScreen = ({ navigation }) => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#FF6B6B" />
+        <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top"]}>
-      <View style={styles.header}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: theme.primary }]}
+      edges={["top"]}
+    >
+      <View style={[styles.header, { backgroundColor: theme.primary }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
@@ -141,10 +152,8 @@ const AdminNotificationsScreen = ({ navigation }) => {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Ionicons name="notifications-off-outline" size={64} color="#CCC" />
-            <Text style={styles.emptyText}>Không có thông báo mới</Text>
-            <Text style={styles.emptySubtext}>
-              Các đơn hàng chờ xác nhận sẽ hiển thị ở đây
-            </Text>
+            <Text style={styles.emptyText}>{t("noNotifications")}</Text>
+            <Text style={styles.emptySubtext}>{t("pendingOrdersHere")}</Text>
           </View>
         }
       />
@@ -155,7 +164,6 @@ const AdminNotificationsScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#FF6B6B",
   },
   loadingContainer: {
     flex: 1,
@@ -164,7 +172,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#F5F5F5",
   },
   header: {
-    backgroundColor: "#FF6B6B",
     padding: 16,
     flexDirection: "row",
     alignItems: "center",

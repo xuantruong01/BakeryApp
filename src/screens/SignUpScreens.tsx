@@ -17,8 +17,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "../services/firebaseConfig";
 import { LinearGradient } from "expo-linear-gradient";
+import { useApp } from "../contexts/AppContext";
 
 const SignUpScreen = ({ navigation }) => {
+  const { theme, t } = useApp();
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -29,12 +31,22 @@ const SignUpScreen = ({ navigation }) => {
   const [showRePass, setShowRePass] = useState(false);
 
   // State lưu lỗi từng trường
-  const [errors, setErrors] = useState<{[key: string]: string | null}>({});
+  const [errors, setErrors] = useState<{ [key: string]: string | null }>({});
 
   // Hàm kiểm tra rỗng từng trường khi blur
   const handleBlur = (field, value) => {
     if (!value.trim()) {
-      setErrors((prev) => ({ ...prev, [field]: "Không được để trống!" }));
+      const errorMessages = {
+        fullName: t("fullNameRequired"),
+        email: t("emailRequired"),
+        phone: t("phoneRequired"),
+        password: t("passwordRequired"),
+        rePassword: t("passwordRequired"),
+      };
+      setErrors((prev) => ({
+        ...prev,
+        [field]: errorMessages[field] || t("fieldRequired"),
+      }));
     } else {
       setErrors((prev) => ({ ...prev, [field]: null }));
     }
@@ -42,25 +54,40 @@ const SignUpScreen = ({ navigation }) => {
 
   const handleSignUp = async () => {
     // Kiểm tra lỗi
-    if (!email.trim() || !fullName.trim() || !phone.trim() || !password.trim() || !rePassword.trim()) {
-      ToastAndroid.show("Vui lòng nhập đầy đủ thông tin!", ToastAndroid.SHORT);
-      return;
-    }
-
-    if (password !== rePassword) {
-      ToastAndroid.show("Mật khẩu nhập lại không khớp!", ToastAndroid.SHORT);
+    if (
+      !email.trim() ||
+      !fullName.trim() ||
+      !phone.trim() ||
+      !password.trim() ||
+      !rePassword.trim()
+    ) {
+      Alert.alert(t("signUpError"), t("fillAllFields"));
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      Alert.alert("Lỗi", "Email không hợp lệ!");
+      Alert.alert(t("signUpError"), t("emailInvalid"));
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert(t("signUpError"), t("passwordTooShort"));
+      return;
+    }
+
+    if (password !== rePassword) {
+      Alert.alert(t("signUpError"), t("passwordsNotMatch"));
       return;
     }
 
     setLoading(true);
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
       const user = userCredential.user;
 
       await setDoc(doc(db, "users", user.uid), {
@@ -70,73 +97,112 @@ const SignUpScreen = ({ navigation }) => {
         createdAt: new Date(),
       });
 
-      Alert.alert("Đăng ký thành công!");
+      Alert.alert("✅ " + t("signUpSuccess"), t("signUpSuccess"));
       navigation.navigate("Login");
-    } catch (error) {
-      console.error("Lỗi đăng ký:", error);
-      Alert.alert("Đăng ký thất bại", error.message);
+    } catch (error: any) {
+      console.error("Sign up error:", error);
+      let errorMessage = t("signUpError");
+      if (error.code === "auth/email-already-in-use") {
+        errorMessage = t("emailAlreadyInUse");
+      } else if (error.code === "auth/invalid-email") {
+        errorMessage = t("emailInvalid");
+      } else if (error.code === "auth/weak-password") {
+        errorMessage = t("passwordTooShort");
+      } else if (error.code === "auth/network-request-failed") {
+        errorMessage = t("networkError");
+      } else if (error.code === "auth/too-many-requests") {
+        errorMessage = t("tooManyRequests");
+      }
+      Alert.alert("❌ " + t("signUpError"), errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={{ flex: 1 }} 
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <LinearGradient
-        colors={["#FFF5E6", "#FFE8CC", "#FFFFFF"]}
+        colors={[theme.lightBg, theme.background, theme.lightBg]}
         style={styles.container}
       >
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={24} color="#924900" />
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color={theme.primary} />
           </TouchableOpacity>
 
           {/* Icon đăng ký */}
           <View style={styles.iconContainer}>
-            <View style={styles.iconCircle}>
-              <Ionicons name="person-add" size={60} color="#924900" />
+            <View
+              style={[styles.iconCircle, { backgroundColor: theme.lightBg }]}
+            >
+              <Ionicons name="person-add" size={60} color={theme.primary} />
             </View>
           </View>
 
-          <Text style={styles.title}>Tạo tài khoản mới</Text>
-          <Text style={styles.subtitle}>Đăng ký để bắt đầu mua sắm</Text>
+          <Text style={[styles.title, { color: theme.text }]}>
+            {t("signUpButton")}
+          </Text>
+          <Text style={[styles.subtitle, { color: theme.text }]}>
+            {t("signUpToStart")}
+          </Text>
 
           {/* Full Name */}
           <View style={styles.inputWrapper}>
-            <View style={styles.inputContainer}>
-              <Ionicons name="person-outline" size={22} color="#924900" style={styles.inputIcon} />
+            <View
+              style={[styles.inputContainer, { borderColor: theme.primary }]}
+            >
+              <Ionicons
+                name="person-outline"
+                size={22}
+                color={theme.primary}
+                style={styles.inputIcon}
+              />
               <TextInput
                 style={[
                   styles.input,
-                  errors.fullName ? styles.inputError : null
+                  { color: theme.text },
+                  errors.fullName ? styles.inputError : null,
                 ]}
-                placeholder="Nhập họ và tên"
-                placeholderTextColor="#999"
+                placeholder={t("enterFullName")}
+                placeholderTextColor={theme.text + "80"}
                 value={fullName}
                 onChangeText={setFullName}
                 onBlur={() => handleBlur("fullName", fullName)}
               />
             </View>
-            {errors.fullName && <Text style={styles.errorText}>{errors.fullName}</Text>}
+            {errors.fullName && (
+              <Text style={styles.errorText}>{errors.fullName}</Text>
+            )}
           </View>
 
           {/* Email */}
           <View style={styles.inputWrapper}>
-            <View style={styles.inputContainer}>
-              <Ionicons name="mail-outline" size={22} color="#924900" style={styles.inputIcon} />
+            <View
+              style={[styles.inputContainer, { borderColor: theme.primary }]}
+            >
+              <Ionicons
+                name="mail-outline"
+                size={22}
+                color={theme.primary}
+                style={styles.inputIcon}
+              />
               <TextInput
                 style={[
                   styles.input,
-                  errors.email ? styles.inputError : null
+                  { color: theme.text },
+                  errors.email ? styles.inputError : null,
                 ]}
-                placeholder="Nhập email của bạn"
-                placeholderTextColor="#999"
+                placeholder={t("enterEmail")}
+                placeholderTextColor={theme.text + "80"}
                 value={email}
                 onChangeText={setEmail}
                 onBlur={() => handleBlur("email", email)}
@@ -144,87 +210,119 @@ const SignUpScreen = ({ navigation }) => {
                 autoCapitalize="none"
               />
             </View>
-            {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+            {errors.email && (
+              <Text style={styles.errorText}>{errors.email}</Text>
+            )}
           </View>
 
           {/* Phone */}
           <View style={styles.inputWrapper}>
-            <View style={styles.inputContainer}>
-              <Ionicons name="call-outline" size={22} color="#924900" style={styles.inputIcon} />
+            <View
+              style={[styles.inputContainer, { borderColor: theme.primary }]}
+            >
+              <Ionicons
+                name="call-outline"
+                size={22}
+                color={theme.primary}
+                style={styles.inputIcon}
+              />
               <TextInput
                 style={[
                   styles.input,
-                  errors.phone ? styles.inputError : null
+                  { color: theme.text },
+                  errors.phone ? styles.inputError : null,
                 ]}
-                placeholder="Nhập số điện thoại"
-                placeholderTextColor="#999"
+                placeholder={t("enterPhone")}
+                placeholderTextColor={theme.text + "80"}
                 value={phone}
                 onChangeText={setPhone}
                 onBlur={() => handleBlur("phone", phone)}
                 keyboardType="phone-pad"
               />
             </View>
-            {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
+            {errors.phone && (
+              <Text style={styles.errorText}>{errors.phone}</Text>
+            )}
           </View>
 
           {/* Password */}
           <View style={styles.inputWrapper}>
-            <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={22} color="#924900" style={styles.inputIcon} />
+            <View
+              style={[styles.inputContainer, { borderColor: theme.primary }]}
+            >
+              <Ionicons
+                name="lock-closed-outline"
+                size={22}
+                color={theme.primary}
+                style={styles.inputIcon}
+              />
               <TextInput
                 style={[
                   styles.input,
-                  errors.password ? styles.inputError : null
+                  { color: theme.text },
+                  errors.password ? styles.inputError : null,
                 ]}
-                placeholder="Nhập mật khẩu"
-                placeholderTextColor="#999"
+                placeholder={t("enterPassword")}
+                placeholderTextColor={theme.text + "80"}
                 value={password}
                 onChangeText={setPassword}
                 onBlur={() => handleBlur("password", password)}
                 secureTextEntry={!showPass}
               />
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => setShowPass(!showPass)}
                 style={styles.eyeIcon}
               >
                 <Ionicons
                   name={showPass ? "eye-off-outline" : "eye-outline"}
                   size={22}
-                  color="#924900"
+                  color={theme.primary}
                 />
               </TouchableOpacity>
             </View>
-            {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
+            {errors.password && (
+              <Text style={styles.errorText}>{errors.password}</Text>
+            )}
           </View>
 
           {/* Re-Password */}
           <View style={styles.inputWrapper}>
-            <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={22} color="#924900" style={styles.inputIcon} />
+            <View
+              style={[styles.inputContainer, { borderColor: theme.primary }]}
+            >
+              <Ionicons
+                name="lock-closed-outline"
+                size={22}
+                color={theme.primary}
+                style={styles.inputIcon}
+              />
               <TextInput
                 style={[
                   styles.input,
-                  errors.rePassword ? styles.inputError : null
+                  { color: theme.text },
+                  errors.rePassword ? styles.inputError : null,
                 ]}
-                placeholder="Nhập lại mật khẩu"
-                placeholderTextColor="#999"
+                placeholder={t("enterConfirmPassword")}
+                placeholderTextColor={theme.text + "80"}
                 value={rePassword}
                 onChangeText={setRePassword}
                 onBlur={() => handleBlur("rePassword", rePassword)}
                 secureTextEntry={!showRePass}
               />
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => setShowRePass(!showRePass)}
                 style={styles.eyeIcon}
               >
                 <Ionicons
                   name={showRePass ? "eye-off-outline" : "eye-outline"}
                   size={22}
-                  color="#924900"
+                  color={theme.primary}
                 />
               </TouchableOpacity>
             </View>
-            {errors.rePassword && <Text style={styles.errorText}>{errors.rePassword}</Text>}
+            {errors.rePassword && (
+              <Text style={styles.errorText}>{errors.rePassword}</Text>
+            )}
           </View>
 
           {/* Nút đăng ký */}
@@ -234,28 +332,38 @@ const SignUpScreen = ({ navigation }) => {
             onPress={handleSignUp}
           >
             <LinearGradient
-              colors={["#C06000", "#924900", "#6B3600"]}
+              colors={[theme.primary, theme.secondary, theme.accent]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.gradientButton}
             >
               <Text style={styles.signupTextBtn}>
-                {loading ? "Đang tạo tài khoản..." : "Đăng ký"}
+                {loading ? t("signingUp") : t("signUpButton")}
               </Text>
             </LinearGradient>
           </TouchableOpacity>
 
           {/* Divider */}
           <View style={styles.dividerContainer}>
-            <View style={styles.divider} />
-            <Text style={styles.dividerText}>hoặc</Text>
-            <View style={styles.divider} />
+            <View
+              style={[styles.divider, { backgroundColor: theme.text + "30" }]}
+            />
+            <Text style={[styles.dividerText, { color: theme.text }]}>
+              {t("or")}
+            </Text>
+            <View
+              style={[styles.divider, { backgroundColor: theme.text + "30" }]}
+            />
           </View>
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Đã có tài khoản? </Text>
+            <Text style={[styles.footerText, { color: theme.text }]}>
+              {t("alreadyHaveAccount")}{" "}
+            </Text>
             <TouchableOpacity onPress={() => navigation.replace("Login")}>
-              <Text style={styles.loginText}>Đăng nhập</Text>
+              <Text style={[styles.loginText, { color: theme.primary }]}>
+                {t("loginButton")}
+              </Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -284,10 +392,9 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: "#FFF",
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#924900",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -297,11 +404,9 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: "bold",
     marginBottom: 8,
-    color: "#924900",
   },
   subtitle: {
     fontSize: 16,
-    color: "#666",
     marginBottom: 25,
   },
   inputWrapper: {
@@ -313,9 +418,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     width: "100%",
     borderWidth: 2,
-    borderColor: "#E0E0E0",
     borderRadius: 15,
-    backgroundColor: "#FFF",
     paddingHorizontal: 15,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -330,7 +433,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 14,
     fontSize: 16,
-    color: "#333",
   },
   inputError: {
     borderColor: "#FF4444",
@@ -349,7 +451,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     marginTop: 10,
     overflow: "hidden",
-    shadowColor: "#924900",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -374,11 +476,9 @@ const styles = StyleSheet.create({
   divider: {
     flex: 1,
     height: 1,
-    backgroundColor: "#E0E0E0",
   },
   dividerText: {
     marginHorizontal: 15,
-    color: "#999",
     fontSize: 14,
   },
   footer: {
@@ -387,10 +487,8 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 15,
-    color: "#666",
   },
   loginText: {
-    color: "#924900",
     fontWeight: "bold",
     fontSize: 15,
   },
@@ -399,7 +497,6 @@ const styles = StyleSheet.create({
     top: 50,
     left: 20,
     zIndex: 10,
-    backgroundColor: "#FFF",
     borderRadius: 25,
     padding: 8,
     shadowColor: "#000",
