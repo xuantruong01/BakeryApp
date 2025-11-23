@@ -19,7 +19,7 @@ import { useApp } from "../../contexts/AppContext";
 const { width } = Dimensions.get("window");
 
 const AdminStatisticsScreen = ({ navigation }) => {
-  const { theme } = useApp();
+  const { theme, t } = useApp();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState({
@@ -155,7 +155,7 @@ const AdminStatisticsScreen = ({ navigation }) => {
 
             if (categoryId) {
               const categoryName =
-                categoriesMap.get(categoryId) || "Chưa phân loại";
+                categoriesMap.get(categoryId) || t("uncategorized");
               const catCurrent = categorySales.get(categoryId) || {
                 name: categoryName,
                 quantity: 0,
@@ -290,41 +290,39 @@ const AdminStatisticsScreen = ({ navigation }) => {
           colors={[theme.primary, theme.secondary]}
           style={styles.header}
         >
-          <Text style={styles.headerTitle}>📊 Thống Kê Chi Tiết</Text>
-          <Text style={styles.headerSubtitle}>
-            Phân tích dữ liệu kinh doanh
-          </Text>
+          <Text style={styles.headerTitle}>📊 {t("detailedStatistics")}</Text>
+          <Text style={styles.headerSubtitle}>{t("businessDataAnalysis")}</Text>
         </LinearGradient>
 
         {/* Doanh thu */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>💰 Doanh Thu</Text>
+          <Text style={styles.sectionTitle}>💰 {t("revenue")}</Text>
           <View style={styles.statsGrid}>
             <StatCard
-              title="Hôm nay"
+              title={t("today")}
               value={`${stats.revenue.today.toLocaleString("vi-VN")}đ`}
-              subtitle={`${stats.orders.today} đơn`}
+              subtitle={`${stats.orders.today} ${t("orders").toLowerCase()}`}
               icon="cash"
               gradient={["#4CAF50", "#45a049"]}
             />
             <StatCard
-              title="7 ngày"
+              title={t("sevenDays")}
               value={`${stats.revenue.week.toLocaleString("vi-VN")}đ`}
-              subtitle={`${stats.orders.week} đơn`}
+              subtitle={`${stats.orders.week} ${t("orders").toLowerCase()}`}
               icon="trending-up"
               gradient={["#2196F3", "#1976D2"]}
             />
             <StatCard
-              title="30 ngày"
+              title={t("thirtyDays")}
               value={`${stats.revenue.month.toLocaleString("vi-VN")}đ`}
-              subtitle={`${stats.orders.month} đơn`}
+              subtitle={`${stats.orders.month} ${t("orders").toLowerCase()}`}
               icon="analytics"
               gradient={["#9C27B0", "#7B1FA2"]}
             />
             <StatCard
-              title="Tổng cộng"
+              title={t("total")}
               value={`${stats.revenue.total.toLocaleString("vi-VN")}đ`}
-              subtitle="Tất cả thời gian"
+              subtitle={t("allTime")}
               icon="wallet"
               gradient={["#FF9800", "#F57C00"]}
             />
@@ -333,7 +331,7 @@ const AdminStatisticsScreen = ({ navigation }) => {
 
         {/* Trạng thái đơn hàng */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📦 Trạng Thái Đơn Hàng</Text>
+          <Text style={styles.sectionTitle}>📦 {t("orderStatus")}</Text>
           <View style={styles.orderStatsContainer}>
             <View style={styles.orderStatItem}>
               <View
@@ -342,7 +340,7 @@ const AdminStatisticsScreen = ({ navigation }) => {
                 <Ionicons name="time" size={20} color="#FFF" />
               </View>
               <Text style={styles.orderStatValue}>{stats.orders.pending}</Text>
-              <Text style={styles.orderStatLabel}>Chờ xác nhận</Text>
+              <Text style={styles.orderStatLabel}>{t("pending")}</Text>
             </View>
             <View style={styles.orderStatItem}>
               <View
@@ -353,7 +351,7 @@ const AdminStatisticsScreen = ({ navigation }) => {
               <Text style={styles.orderStatValue}>
                 {stats.orders.processing}
               </Text>
-              <Text style={styles.orderStatLabel}>Đang xử lý</Text>
+              <Text style={styles.orderStatLabel}>{t("processing")}</Text>
             </View>
             <View style={styles.orderStatItem}>
               <View
@@ -364,7 +362,7 @@ const AdminStatisticsScreen = ({ navigation }) => {
               <Text style={styles.orderStatValue}>
                 {stats.orders.completed}
               </Text>
-              <Text style={styles.orderStatLabel}>Hoàn thành</Text>
+              <Text style={styles.orderStatLabel}>{t("completed")}</Text>
             </View>
             <View style={styles.orderStatItem}>
               <View
@@ -375,14 +373,14 @@ const AdminStatisticsScreen = ({ navigation }) => {
               <Text style={styles.orderStatValue}>
                 {stats.orders.cancelled}
               </Text>
-              <Text style={styles.orderStatLabel}>Đã hủy</Text>
+              <Text style={styles.orderStatLabel}>{t("cancelled")}</Text>
             </View>
           </View>
         </View>
 
         {/* Top sản phẩm */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🏆 Top Sản Phẩm Bán Chạy</Text>
+          <Text style={styles.sectionTitle}>🏆 {t("topSellingProducts")}</Text>
           <View style={styles.chartContainer}>
             {stats.topProducts.length > 0 ? (
               stats.topProducts.map((product, index) => (
@@ -399,14 +397,16 @@ const AdminStatisticsScreen = ({ navigation }) => {
                 />
               ))
             ) : (
-              <Text style={styles.emptyText}>Chưa có dữ liệu</Text>
+              <Text style={styles.emptyText}>{t("noData")}</Text>
             )}
           </View>
         </View>
 
         {/* Top danh mục */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📁 Top Danh Mục Doanh Thu</Text>
+          <Text style={styles.sectionTitle}>
+            📁 {t("topRevenueCategories")}
+          </Text>
           <View style={styles.chartContainer}>
             {stats.topCategories.length > 0 ? (
               stats.topCategories.map((category, index) => (
@@ -423,14 +423,14 @@ const AdminStatisticsScreen = ({ navigation }) => {
                 />
               ))
             ) : (
-              <Text style={styles.emptyText}>Chưa có dữ liệu</Text>
+              <Text style={styles.emptyText}>{t("noData")}</Text>
             )}
           </View>
         </View>
 
         {/* Đơn hàng gần đây */}
         <View style={[styles.section, { marginBottom: 20 }]}>
-          <Text style={styles.sectionTitle}>🕒 Đơn Hàng Gần Đây</Text>
+          <Text style={styles.sectionTitle}>🕒 {t("recentOrders")}</Text>
           {stats.recentOrders.map((order) => (
             <TouchableOpacity
               key={order.id}
@@ -444,7 +444,7 @@ const AdminStatisticsScreen = ({ navigation }) => {
                   #{order.id.slice(-6).toUpperCase()}
                 </Text>
                 <Text style={styles.recentOrderCustomer}>
-                  {order.customerName || "Khách hàng"}
+                  {order.customerName || t("customer")}
                 </Text>
                 <Text style={styles.recentOrderDate}>
                   {order.createdAt?.toDate?.()?.toLocaleDateString("vi-VN") ||
@@ -472,19 +472,19 @@ const AdminStatisticsScreen = ({ navigation }) => {
                 >
                   <Text style={styles.recentOrderStatusText}>
                     {order.status === "completed"
-                      ? "Hoàn thành"
+                      ? t("completed")
                       : order.status === "processing"
-                      ? "Đang xử lý"
+                      ? t("processing")
                       : order.status === "pending"
-                      ? "Chờ xác nhận"
-                      : "Đã hủy"}
+                      ? t("pending")
+                      : t("cancelled")}
                   </Text>
                 </View>
               </View>
             </TouchableOpacity>
           ))}
           {stats.recentOrders.length === 0 && (
-            <Text style={styles.emptyText}>Chưa có đơn hàng nào</Text>
+            <Text style={styles.emptyText}>{t("noOrders")}</Text>
           )}
         </View>
       </ScrollView>

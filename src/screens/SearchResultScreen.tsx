@@ -211,17 +211,15 @@ function ScrollChip({
 
 /* ---------- Styles ---------- */
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#fff" },
+  safe: { flex: 1 },
 
   /* Thanh tìm kiếm */
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
     marginHorizontal: 20,
-    backgroundColor: "#f5f5f5",
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#eee",
     paddingHorizontal: 10,
     marginBottom: 10,
     marginTop: 10,
@@ -241,7 +239,6 @@ const styles = StyleSheet.create({
   chip: {
     paddingVertical: 6,
     paddingHorizontal: 10,
-    backgroundColor: "#f2f2f2",
     borderRadius: 20,
   },
   chipActive: {},

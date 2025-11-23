@@ -45,7 +45,7 @@ const SignUpScreen = ({ navigation }) => {
       };
       setErrors((prev) => ({
         ...prev,
-        [field]: errorMessages[field] || "Không được để trống!",
+        [field]: errorMessages[field] || t("fieldRequired"),
       }));
     } else {
       setErrors((prev) => ({ ...prev, [field]: null }));
@@ -100,18 +100,18 @@ const SignUpScreen = ({ navigation }) => {
       Alert.alert("✅ " + t("signUpSuccess"), t("signUpSuccess"));
       navigation.navigate("Login");
     } catch (error: any) {
-      console.error("Lỗi đăng ký:", error);
+      console.error("Sign up error:", error);
       let errorMessage = t("signUpError");
       if (error.code === "auth/email-already-in-use") {
-        errorMessage = "Email này đã được sử dụng!";
+        errorMessage = t("emailAlreadyInUse");
       } else if (error.code === "auth/invalid-email") {
         errorMessage = t("emailInvalid");
       } else if (error.code === "auth/weak-password") {
         errorMessage = t("passwordTooShort");
       } else if (error.code === "auth/network-request-failed") {
-        errorMessage = "Lỗi kết nối mạng. Vui lòng kiểm tra internet!";
+        errorMessage = t("networkError");
       } else if (error.code === "auth/too-many-requests") {
-        errorMessage = "Quá nhiều lần thử. Vui lòng thử lại sau!";
+        errorMessage = t("tooManyRequests");
       }
       Alert.alert("❌ " + t("signUpError"), errorMessage);
     } finally {
@@ -125,7 +125,7 @@ const SignUpScreen = ({ navigation }) => {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <LinearGradient
-        colors={[theme.lightBg, theme.background, "#FFFFFF"]}
+        colors={[theme.lightBg, theme.background, theme.lightBg]}
         style={styles.container}
       >
         <ScrollView
@@ -152,7 +152,7 @@ const SignUpScreen = ({ navigation }) => {
             {t("signUpButton")}
           </Text>
           <Text style={[styles.subtitle, { color: theme.text }]}>
-            Đăng ký để bắt đầu mua sắm
+            {t("signUpToStart")}
           </Text>
 
           {/* Full Name */}
@@ -349,7 +349,7 @@ const SignUpScreen = ({ navigation }) => {
               style={[styles.divider, { backgroundColor: theme.text + "30" }]}
             />
             <Text style={[styles.dividerText, { color: theme.text }]}>
-              hoặc
+              {t("or")}
             </Text>
             <View
               style={[styles.divider, { backgroundColor: theme.text + "30" }]}
@@ -358,7 +358,7 @@ const SignUpScreen = ({ navigation }) => {
 
           <View style={styles.footer}>
             <Text style={[styles.footerText, { color: theme.text }]}>
-              Đã có tài khoản?{" "}
+              {t("alreadyHaveAccount")}{" "}
             </Text>
             <TouchableOpacity onPress={() => navigation.replace("Login")}>
               <Text style={[styles.loginText, { color: theme.primary }]}>
@@ -392,10 +392,9 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: "#FFF",
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#924900",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -405,11 +404,9 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: "bold",
     marginBottom: 8,
-    color: "#924900",
   },
   subtitle: {
     fontSize: 16,
-    color: "#666",
     marginBottom: 25,
   },
   inputWrapper: {
@@ -421,9 +418,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     width: "100%",
     borderWidth: 2,
-    borderColor: "#E0E0E0",
     borderRadius: 15,
-    backgroundColor: "#FFF",
     paddingHorizontal: 15,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -438,7 +433,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 14,
     fontSize: 16,
-    color: "#333",
   },
   inputError: {
     borderColor: "#FF4444",
@@ -457,7 +451,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     marginTop: 10,
     overflow: "hidden",
-    shadowColor: "#924900",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -482,11 +476,9 @@ const styles = StyleSheet.create({
   divider: {
     flex: 1,
     height: 1,
-    backgroundColor: "#E0E0E0",
   },
   dividerText: {
     marginHorizontal: 15,
-    color: "#999",
     fontSize: 14,
   },
   footer: {
@@ -495,10 +487,8 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 15,
-    color: "#666",
   },
   loginText: {
-    color: "#924900",
     fontWeight: "bold",
     fontSize: 15,
   },
@@ -507,7 +497,6 @@ const styles = StyleSheet.create({
     top: 50,
     left: 20,
     zIndex: 10,
-    backgroundColor: "#FFF",
     borderRadius: 25,
     padding: 8,
     shadowColor: "#000",

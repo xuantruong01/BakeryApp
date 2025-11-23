@@ -35,8 +35,6 @@ const AdminSettingsScreen = ({ navigation }) => {
     { id: "orange", name: "Cam", color: "#E58E26" },
     { id: "blue", name: "Xanh dương", color: "#4A90E2" },
     { id: "green", name: "Xanh lá", color: "#28A745" },
-    { id: "purple", name: "Tím", color: "#9C27B0" },
-    { id: "red", name: "Đỏ", color: "#DC3545" },
   ];
 
   const languages = [

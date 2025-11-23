@@ -11,6 +11,7 @@ import {
   Image,
   ScrollView,
   TextInput,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -35,6 +36,8 @@ const AdminOrdersScreen = ({ navigation, route }) => {
     route?.params?.filter || "all"
   );
   const [searchQuery, setSearchQuery] = useState("");
+  const [imageModalVisible, setImageModalVisible] = useState(false);
+  const [selectedImage, setSelectedImage] = useState("");
 
   useEffect(() => {
     fetchOrders();
@@ -84,7 +87,7 @@ const AdminOrdersScreen = ({ navigation, route }) => {
     // Filter by phone number
     if (searchQuery.trim()) {
       filtered = filtered.filter((order) =>
-        order.phone?.includes(searchQuery.trim())
+        order.customerPhone?.includes(searchQuery.trim())
       );
     }
 
@@ -243,7 +246,7 @@ const AdminOrdersScreen = ({ navigation, route }) => {
           {item.total?.toLocaleString("vi-VN")}đ
         </Text>
       </View>
-      {item.paymentProof && (
+      {item.paymentProofBase64 && (
         <View style={{ alignItems: "center", marginBottom: 10 }}>
           <Text
             style={{
@@ -255,21 +258,35 @@ const AdminOrdersScreen = ({ navigation, route }) => {
           >
             {t("paymentProof")}:
           </Text>
-          <Image
-            source={{
-              uri: item.paymentProof.startsWith("data:")
-                ? item.paymentProof
-                : `data:image/jpeg;base64,${item.paymentProof}`,
+          <TouchableOpacity
+            onPress={() => {
+              const imageUri = item.paymentProofBase64.startsWith("data:")
+                ? item.paymentProofBase64
+                : `data:image/jpeg;base64,${item.paymentProofBase64}`;
+              console.log("Opening image:", imageUri.substring(0, 50));
+              setSelectedImage(imageUri);
+              setImageModalVisible(true);
             }}
-            style={{
-              width: 120,
-              height: 120,
-              borderRadius: 10,
-              borderWidth: 1,
-              borderColor: "#E58E26",
-            }}
-            resizeMode="cover"
-          />
+          >
+            <Image
+              source={{
+                uri: item.paymentProofBase64.startsWith("data:")
+                  ? item.paymentProofBase64
+                  : `data:image/jpeg;base64,${item.paymentProofBase64}`,
+              }}
+              style={{
+                width: 120,
+                height: 120,
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: "#E58E26",
+              }}
+              resizeMode="cover"
+              onError={(e) =>
+                console.log("Image load error:", e.nativeEvent.error)
+              }
+            />
+          </TouchableOpacity>
         </View>
       )}
       <View style={styles.orderActions}>
@@ -415,6 +432,34 @@ const AdminOrdersScreen = ({ navigation, route }) => {
           }
         />
       </View>
+
+      {/* Image Modal */}
+      <Modal
+        visible={imageModalVisible}
+        transparent={true}
+        onRequestClose={() => setImageModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalContainer}
+          activeOpacity={1}
+          onPress={() => setImageModalVisible(false)}
+        >
+          <TouchableOpacity
+            style={styles.modalCloseButton}
+            onPress={() => setImageModalVisible(false)}
+          >
+            <Ionicons name="close-circle" size={40} color="#FFF" />
+          </TouchableOpacity>
+          <Image
+            source={{ uri: selectedImage }}
+            style={styles.modalImage}
+            resizeMode="contain"
+            onError={(e) =>
+              console.log("Modal image error:", e.nativeEvent.error)
+            }
+          />
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -658,6 +703,24 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     color: "#999",
+  },
+
+  /* MODAL */
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalCloseButton: {
+    position: "absolute",
+    top: 50,
+    right: 20,
+    zIndex: 1,
+  },
+  modalImage: {
+    width: "90%",
+    height: "80%",
   },
 });
 

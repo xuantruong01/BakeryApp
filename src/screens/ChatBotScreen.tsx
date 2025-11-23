@@ -26,8 +26,10 @@ import {
   OrderHistory,
   ProductData,
 } from "../services/aiService";
+import { useApp } from "../contexts/AppContext";
 
 const ChatBotScreen = () => {
+  const { theme, t } = useApp();
   const navigation = useNavigation();
   const flatListRef = useRef<FlatList>(null);
 
@@ -88,7 +90,10 @@ const ChatBotScreen = () => {
       setAiContext(context);
 
       // Tạo gợi ý tự động
-      const autoSuggestions = await generateAutoSuggestions(orders, productsList);
+      const autoSuggestions = await generateAutoSuggestions(
+        orders,
+        productsList
+      );
       setSuggestions(autoSuggestions);
 
       // Tin nhắn chào mừng
@@ -130,13 +135,21 @@ const ChatBotScreen = () => {
 
     try {
       // Gọi AI với danh sách sản phẩm
-      const response = await sendMessageToAI(text, messages, aiContext, products);
+      const response = await sendMessageToAI(
+        text,
+        messages,
+        aiContext,
+        products
+      );
 
       const assistantMessage: Message = {
         role: "assistant",
         content: response.text,
         timestamp: new Date(),
-        products: response.suggestedProducts.length > 0 ? response.suggestedProducts : undefined,
+        products:
+          response.suggestedProducts.length > 0
+            ? response.suggestedProducts
+            : undefined,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -163,19 +176,37 @@ const ChatBotScreen = () => {
       <View
         style={[
           styles.messageContainer,
-          isUser ? styles.userMessageContainer : styles.assistantMessageContainer,
+          isUser
+            ? styles.userMessageContainer
+            : styles.assistantMessageContainer,
         ]}
       >
         <View
           style={[
             styles.messageBubble,
-            isUser ? styles.userBubble : styles.assistantBubble,
+            isUser
+              ? { backgroundColor: theme.primary }
+              : {
+                  backgroundColor: theme.background,
+                  borderWidth: 1,
+                  borderColor: theme.lightBg,
+                },
           ]}
         >
-          <Text style={[styles.messageText, isUser && styles.userMessageText]}>
+          <Text
+            style={[
+              styles.messageText,
+              isUser ? { color: "#FFF" } : { color: theme.text },
+            ]}
+          >
             {item.content}
           </Text>
-          <Text style={[styles.timestamp, isUser && styles.userTimestamp]}>
+          <Text
+            style={[
+              styles.timestamp,
+              isUser ? { color: theme.lightBg } : { color: theme.text + "60" },
+            ]}
+          >
             {item.timestamp.toLocaleTimeString("vi-VN", {
               hour: "2-digit",
               minute: "2-digit",
@@ -189,7 +220,13 @@ const ChatBotScreen = () => {
             {item.products.map((product) => (
               <TouchableOpacity
                 key={product.id}
-                style={styles.productCard}
+                style={[
+                  styles.productCard,
+                  {
+                    backgroundColor: theme.background,
+                    borderColor: theme.lightBg,
+                  },
+                ]}
                 onPress={() => {
                   const parentNav = (navigation as any).getParent?.();
                   if (parentNav) {
@@ -205,16 +242,32 @@ const ChatBotScreen = () => {
                   style={styles.productImage}
                 />
                 <View style={styles.productInfo}>
-                  <Text style={styles.productName} numberOfLines={2}>
+                  <Text
+                    style={[styles.productName, { color: theme.text }]}
+                    numberOfLines={2}
+                  >
                     {product.name}
                   </Text>
-                  <Text style={styles.productPrice}>
+                  <Text style={[styles.productPrice, { color: theme.primary }]}>
                     {parseInt(String(product.price)).toLocaleString()}đ
                   </Text>
                 </View>
-                <TouchableOpacity style={styles.productViewButton}>
-                  <Text style={styles.productViewText}>Xem chi tiết</Text>
-                  <Ionicons name="arrow-forward" size={14} color="#924900" />
+                <TouchableOpacity
+                  style={[
+                    styles.productViewButton,
+                    { backgroundColor: theme.lightBg },
+                  ]}
+                >
+                  <Text
+                    style={[styles.productViewText, { color: theme.primary }]}
+                  >
+                    {t("viewDetail")}
+                  </Text>
+                  <Ionicons
+                    name="arrow-forward"
+                    size={14}
+                    color={theme.primary}
+                  />
                 </TouchableOpacity>
               </TouchableOpacity>
             ))}
@@ -226,27 +279,41 @@ const ChatBotScreen = () => {
 
   if (initializing) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#924900" />
-        <Text style={styles.loadingText}>Đang khởi động AI...</Text>
+      <View style={[styles.center, { backgroundColor: theme.lightBg }]}>
+        <ActivityIndicator size="large" color={theme.primary} />
+        <Text style={[styles.loadingText, { color: theme.text }]}>
+          {t("loading")}
+        </Text>
       </View>
     );
   }
 
   return (
-    <LinearGradient colors={["#FFF5E6", "#FFE8CC", "#FFFFFF"]} style={styles.container}>
+    <LinearGradient
+      colors={[theme.lightBg, theme.background, theme.lightBg]}
+      style={styles.container}
+    >
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={28} color="#924900" />
+      <View style={[styles.header, { borderBottomColor: theme.lightBg }]}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={28} color={theme.primary} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <View style={styles.aiIconContainer}>
-            <Ionicons name="sparkles" size={24} color="#924900" />
+          <View
+            style={[styles.aiIconContainer, { backgroundColor: theme.lightBg }]}
+          >
+            <Ionicons name="sparkles" size={24} color={theme.primary} />
           </View>
           <View>
-            <Text style={styles.headerTitle}>AI Trợ lý</Text>
-            <Text style={styles.headerSubtitle}>Tư vấn thông minh</Text>
+            <Text style={[styles.headerTitle, { color: theme.text }]}>
+              {t("aiAssistant")}
+            </Text>
+            <Text style={[styles.headerSubtitle, { color: theme.text + "80" }]}>
+              {t("smartConsulting")}
+            </Text>
           </View>
         </View>
         <View style={{ width: 28 }} />
@@ -259,7 +326,9 @@ const ChatBotScreen = () => {
         keyExtractor={(item, index) => index.toString()}
         renderItem={renderMessage}
         contentContainerStyle={styles.messagesList}
-        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+        onContentSizeChange={() =>
+          flatListRef.current?.scrollToEnd({ animated: true })
+        }
       />
 
       {/* Quick Suggestions */}
@@ -273,11 +342,19 @@ const ChatBotScreen = () => {
           {suggestions.map((suggestion, index) => (
             <TouchableOpacity
               key={index}
-              style={styles.suggestionChip}
+              style={[
+                styles.suggestionChip,
+                {
+                  backgroundColor: theme.background,
+                  borderColor: theme.lightBg,
+                },
+              ]}
               onPress={() => handleSuggestionPress(suggestion)}
             >
-              <Ionicons name="bulb-outline" size={16} color="#924900" />
-              <Text style={styles.suggestionText}>{suggestion}</Text>
+              <Ionicons name="bulb-outline" size={16} color={theme.primary} />
+              <Text style={[styles.suggestionText, { color: theme.primary }]}>
+                {suggestion}
+              </Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -286,8 +363,10 @@ const ChatBotScreen = () => {
       {/* Loading indicator */}
       {loading && (
         <View style={styles.loadingIndicator}>
-          <ActivityIndicator size="small" color="#924900" />
-          <Text style={styles.loadingIndicatorText}>AI đang suy nghĩ...</Text>
+          <ActivityIndicator size="small" color={theme.primary} />
+          <Text style={[styles.loadingIndicatorText, { color: theme.text }]}>
+            {t("aiThinking")}
+          </Text>
         </View>
       )}
 
@@ -296,11 +375,22 @@ const ChatBotScreen = () => {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
       >
-        <View style={styles.inputContainer}>
+        <View
+          style={[
+            styles.inputContainer,
+            {
+              backgroundColor: theme.background,
+              borderTopColor: theme.lightBg,
+            },
+          ]}
+        >
           <TextInput
-            style={styles.input}
-            placeholder="Nhập câu hỏi của bạn..."
-            placeholderTextColor="#999"
+            style={[
+              styles.input,
+              { backgroundColor: theme.lightBg, color: theme.text },
+            ]}
+            placeholder={t("askQuestion")}
+            placeholderTextColor={theme.text + "60"}
             value={inputText}
             onChangeText={setInputText}
             multiline
@@ -315,8 +405,8 @@ const ChatBotScreen = () => {
             <LinearGradient
               colors={
                 loading || !inputText.trim()
-                  ? ["#CCC", "#999"]
-                  : ["#C06000", "#924900", "#6B3600"]
+                  ? ([theme.text + "40", theme.text + "60"] as any)
+                  : (theme.aiGradient as any)
               }
               style={styles.sendButtonGradient}
             >
@@ -339,12 +429,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#FFF5E6",
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: "#924900",
   },
   header: {
     flexDirection: "row",
@@ -354,7 +442,6 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingBottom: 15,
     borderBottomWidth: 1,
-    borderBottomColor: "#FFE8CC",
   },
   backButton: {
     padding: 5,
@@ -368,18 +455,15 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#FFE8CC",
     justifyContent: "center",
     alignItems: "center",
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#924900",
   },
   headerSubtitle: {
     fontSize: 12,
-    color: "#666",
   },
   messagesList: {
     padding: 15,
@@ -402,30 +486,14 @@ const styles = StyleSheet.create({
     padding: 12,
     paddingHorizontal: 16,
   },
-  userBubble: {
-    backgroundColor: "#924900",
-  },
-  assistantBubble: {
-    backgroundColor: "#FFF",
-    borderWidth: 1,
-    borderColor: "#FFE8CC",
-  },
   messageText: {
     fontSize: 15,
-    color: "#333",
     lineHeight: 20,
-  },
-  userMessageText: {
-    color: "#FFF",
   },
   timestamp: {
     fontSize: 10,
-    color: "#999",
     marginTop: 4,
     alignSelf: "flex-end",
-  },
-  userTimestamp: {
-    color: "#FFE8CC",
   },
   suggestionsContainer: {
     maxHeight: 50,
@@ -438,17 +506,14 @@ const styles = StyleSheet.create({
   suggestionChip: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFF",
     borderRadius: 20,
     paddingHorizontal: 15,
     paddingVertical: 10,
     borderWidth: 1,
-    borderColor: "#FFE8CC",
     gap: 5,
   },
   suggestionText: {
     fontSize: 13,
-    color: "#924900",
   },
   loadingIndicator: {
     flexDirection: "row",
@@ -459,7 +524,6 @@ const styles = StyleSheet.create({
   },
   loadingIndicatorText: {
     fontSize: 13,
-    color: "#924900",
     fontStyle: "italic",
   },
   inputContainer: {
@@ -467,13 +531,10 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     padding: 15,
     paddingBottom: Platform.OS === "ios" ? 30 : 15,
-    backgroundColor: "#FFF",
     borderTopWidth: 1,
-    borderTopColor: "#FFE8CC",
   },
   input: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -507,10 +568,8 @@ const styles = StyleSheet.create({
   },
   productCard: {
     width: "48%",
-    backgroundColor: "#FFF",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#FFE8CC",
     overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -521,7 +580,6 @@ const styles = StyleSheet.create({
   productImage: {
     width: "100%",
     height: 120,
-    backgroundColor: "#F5F5F5",
   },
   productInfo: {
     padding: 10,
@@ -529,13 +587,11 @@ const styles = StyleSheet.create({
   productName: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#333",
     marginBottom: 5,
   },
   productPrice: {
     fontSize: 15,
     fontWeight: "bold",
-    color: "#924900",
   },
   productViewButton: {
     flexDirection: "row",
@@ -543,14 +599,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingVertical: 8,
     paddingHorizontal: 10,
-    backgroundColor: "#FFF5E6",
     borderTopWidth: 1,
-    borderTopColor: "#FFE8CC",
     gap: 5,
   },
   productViewText: {
     fontSize: 12,
-    color: "#924900",
     fontWeight: "600",
   },
 });

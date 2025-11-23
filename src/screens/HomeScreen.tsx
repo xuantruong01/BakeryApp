@@ -280,13 +280,13 @@ const HomeScreen = () => {
           <View style={styles.topHeader}>
             <View>
               <Text style={[styles.helloText, { color: theme.text }]}>
-                Xin chào,
+                {t("hello")},
               </Text>
               <Text style={[styles.appName, { color: theme.primary }]}>
-                Bakery App
+                {t("bakeryAppName")}
               </Text>
               <Text style={[styles.subtitle, { color: theme.text }]}>
-                Đặt bánh ngon, giao tận nơi cho bạn 🍰
+                {t("deliverySlogan")}
               </Text>
             </View>
             <View
@@ -427,8 +427,7 @@ const HomeScreen = () => {
                       <Image
                         source={{
                           uri:
-                            item.imageUrl ||
-                            "https://via.placeholder.com/100",
+                            item.imageUrl || "https://via.placeholder.com/100",
                         }}
                         style={styles.hotImage}
                       />
@@ -785,7 +784,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    shadowColor: "#924900",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

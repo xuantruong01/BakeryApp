@@ -308,7 +308,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#FFF5E6",
   },
   header: {
     flexDirection: "row",
@@ -324,7 +323,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 22,
     fontWeight: "bold",
-    color: "#924900",
   },
   scrollView: {
     flex: 1,
@@ -338,12 +336,10 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#924900",
     marginTop: 20,
   },
   emptySubtext: {
     fontSize: 16,
-    color: "#666",
     marginTop: 10,
     textAlign: "center",
   },
@@ -351,7 +347,6 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   orderCard: {
-    backgroundColor: "#FFF",
     borderRadius: 15,
     padding: 18,
     marginBottom: 15,
@@ -374,7 +369,6 @@ const styles = StyleSheet.create({
   orderId: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#333",
     marginLeft: 8,
   },
   statusBadge: {
@@ -389,7 +383,6 @@ const styles = StyleSheet.create({
   },
   orderDivider: {
     height: 1,
-    backgroundColor: "#E0E0E0",
     marginVertical: 12,
   },
   orderBody: {
@@ -402,13 +395,11 @@ const styles = StyleSheet.create({
   },
   orderLabel: {
     fontSize: 15,
-    color: "#666",
     marginLeft: 8,
     flex: 1,
   },
   orderValue: {
     fontSize: 15,
-    color: "#333",
     fontWeight: "600",
   },
   totalRow: {
@@ -420,12 +411,10 @@ const styles = StyleSheet.create({
   totalLabel: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#666",
   },
   totalPrice: {
     fontSize: 22,
     fontWeight: "bold",
-    color: "#924900",
   },
   cancelledPrice: {
     textDecorationLine: "line-through",
@@ -435,12 +424,10 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: "#F0F0F0",
   },
   itemsTitle: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#666",
     marginBottom: 8,
   },
   itemRow: {
@@ -452,16 +439,13 @@ const styles = StyleSheet.create({
   itemName: {
     flex: 1,
     fontSize: 14,
-    color: "#333",
   },
   itemQuantity: {
     fontSize: 14,
-    color: "#666",
     marginLeft: 10,
   },
   moreItems: {
     fontSize: 13,
-    color: "#924900",
     fontStyle: "italic",
     marginTop: 4,
   },
@@ -474,13 +458,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 10,
     borderWidth: 1.5,
-    borderColor: "#924900",
-    backgroundColor: "#FFF",
   },
   reorderText: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#924900",
     marginLeft: 8,
   },
 });

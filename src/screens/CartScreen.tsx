@@ -182,7 +182,7 @@ export default function CartScreen() {
         style={[styles.safeArea, { backgroundColor: theme.background }]}
       >
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#924900" />
+          <ActivityIndicator size="large" color={theme.primary} />
         </View>
       </SafeAreaView>
     );
@@ -217,7 +217,12 @@ export default function CartScreen() {
 
         {/* SELECT ALL */}
         {!isEmpty && (
-          <View style={styles.selectAllContainer}>
+          <View
+            style={[
+              styles.selectAllContainer,
+              { backgroundColor: theme.background },
+            ]}
+          >
             <TouchableOpacity
               style={styles.selectAllButton}
               onPress={toggleSelectAll}
@@ -239,8 +244,15 @@ export default function CartScreen() {
         )}
 
         {isEmpty ? (
-          <View style={styles.emptyWrap}>
-            <View style={styles.emptyIconCircle}>
+          <View
+            style={[styles.emptyWrap, { backgroundColor: theme.background }]}
+          >
+            <View
+              style={[
+                styles.emptyIconCircle,
+                { backgroundColor: theme.lightBg },
+              ]}
+            >
               <Ionicons name="cart-outline" size={60} color={theme.primary} />
             </View>
             <Text style={[styles.emptyTitle, { color: theme.primary }]}>
@@ -250,7 +262,7 @@ export default function CartScreen() {
               {t("emptyCartSubtitle")}
             </Text>
             <TouchableOpacity
-              style={styles.emptyButton}
+              style={[styles.emptyButton, { backgroundColor: theme.primary }]}
               onPress={() => navigation.navigate("Home")}
             >
               <Text style={styles.emptyButtonText}>
@@ -265,7 +277,15 @@ export default function CartScreen() {
               keyExtractor={(item) => item.id}
               contentContainerStyle={{ paddingBottom: 120 }}
               renderItem={({ item }) => (
-                <View style={[styles.itemCard, { borderColor: theme.lightBg }]}>
+                <View
+                  style={[
+                    styles.itemCard,
+                    {
+                      borderColor: theme.lightBg,
+                      backgroundColor: theme.background,
+                    },
+                  ]}
+                >
                   <TouchableOpacity
                     onPress={() => toggleSelectItem(item.id)}
                     style={styles.checkbox}
@@ -299,7 +319,7 @@ export default function CartScreen() {
                     </Text>
                     {item.stock === 0 ? (
                       <Text
-                        style={[styles.outOfStockText, { color: "#E74C3C" }]}
+                        style={[styles.outOfStockText, { color: "#F44336" }]}
                       >
                         {t("outOfStock")}
                       </Text>
@@ -341,7 +361,7 @@ export default function CartScreen() {
                     style={styles.deleteBtn}
                     onPress={() => removeItem(item)}
                   >
-                    <Ionicons name="trash-outline" size={22} color="#E74C3C" />
+                    <Ionicons name="trash-outline" size={22} color="#F44336" />
                   </TouchableOpacity>
                 </View>
               )}
@@ -452,7 +472,6 @@ const styles = StyleSheet.create({
     width: 110,
     height: 110,
     borderRadius: 55,
-    backgroundColor: "#FFF",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 18,
@@ -476,10 +495,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 14,
-    backgroundColor: "#C06000",
   },
   emptyButtonText: {
-    color: "#fff",
+    color: "#FFF",
     fontWeight: "700",
     fontSize: 15,
   },
@@ -488,7 +506,6 @@ const styles = StyleSheet.create({
   itemCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFF",
     borderRadius: 16,
     marginBottom: 12,
     padding: 12,
@@ -527,7 +544,7 @@ const styles = StyleSheet.create({
   qtyBtnDisabled: {
     opacity: 0.5,
   },
-  qtyBtnText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
+  qtyBtnText: { color: "#FFF", fontSize: 18, fontWeight: "bold" },
   qtyNumber: {
     marginHorizontal: 10,
     fontSize: 16,
@@ -570,7 +587,7 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   checkoutText: {
-    color: "#fff",
+    color: "#FFF",
     fontSize: 15,
     fontWeight: "700",
   },
@@ -579,7 +596,6 @@ const styles = StyleSheet.create({
   selectAllContainer: {
     paddingVertical: 10,
     paddingHorizontal: 12,
-    backgroundColor: "#FFF",
     borderRadius: 12,
     marginBottom: 12,
   },

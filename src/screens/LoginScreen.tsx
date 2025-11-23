@@ -346,7 +346,7 @@ const LoginScreen = ({ navigation }) => {
               style={[styles.divider, { backgroundColor: theme.text + "30" }]}
             />
             <Text style={[styles.dividerText, { color: theme.text }]}>
-              hoặc
+              {t("or")}
             </Text>
             <View
               style={[styles.divider, { backgroundColor: theme.text + "30" }]}
@@ -356,7 +356,7 @@ const LoginScreen = ({ navigation }) => {
           {/* Chuyển sang đăng ký */}
           <View style={styles.footer}>
             <Text style={[styles.footerText, { color: theme.text }]}>
-              Chưa có tài khoản?{" "}
+              {t("noAccountYet")}{" "}
             </Text>
             <TouchableOpacity onPress={() => navigation.navigate("SignUp")}>
               <Text style={[styles.signupText, { color: theme.primary }]}>
@@ -397,7 +397,7 @@ const LoginScreen = ({ navigation }) => {
               </View>
 
               <Text style={[styles.modalDescription, { color: theme.text }]}>
-                Nhập email của bạn và chúng tôi sẽ gửi link đặt lại mật khẩu
+                {t("resetPasswordInstructions")}
               </Text>
 
               <View
@@ -467,10 +467,9 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: "#FFF",
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#924900",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -480,11 +479,9 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: "bold",
     marginBottom: 8,
-    color: "#924900",
   },
   subtitle: {
     fontSize: 16,
-    color: "#666",
     marginBottom: 30,
   },
   inputWrapper: {
@@ -496,9 +493,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     width: "100%",
     borderWidth: 2,
-    borderColor: "#E0E0E0",
     borderRadius: 15,
-    backgroundColor: "#FFF",
     paddingHorizontal: 15,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -513,7 +508,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 14,
     fontSize: 16,
-    color: "#333",
   },
   inputError: {
     borderColor: "#FF4444",
@@ -532,7 +526,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     marginTop: 10,
     overflow: "hidden",
-    shadowColor: "#924900",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -551,7 +545,6 @@ const styles = StyleSheet.create({
   forgotText: {
     alignSelf: "flex-end",
     fontSize: 14,
-    color: "#924900",
     marginBottom: 10,
     fontWeight: "600",
   },
@@ -564,11 +557,9 @@ const styles = StyleSheet.create({
   divider: {
     flex: 1,
     height: 1,
-    backgroundColor: "#E0E0E0",
   },
   dividerText: {
     marginHorizontal: 15,
-    color: "#999",
     fontSize: 14,
   },
   footer: {
@@ -577,10 +568,8 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 15,
-    color: "#666",
   },
   signupText: {
-    color: "#924900",
     fontWeight: "bold",
     fontSize: 15,
   },
@@ -589,7 +578,6 @@ const styles = StyleSheet.create({
     top: 50,
     left: 20,
     zIndex: 10,
-    backgroundColor: "#FFF",
     borderRadius: 25,
     padding: 8,
     shadowColor: "#000",
@@ -627,11 +615,9 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#924900",
   },
   modalDescription: {
     fontSize: 15,
-    color: "#666",
     marginBottom: 20,
     lineHeight: 22,
   },
@@ -639,9 +625,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 2,
-    borderColor: "#E0E0E0",
     borderRadius: 15,
-    backgroundColor: "#FFF",
     paddingHorizontal: 15,
     marginBottom: 20,
   },
@@ -649,13 +633,12 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 14,
     fontSize: 16,
-    color: "#333",
   },
   modalButton: {
     width: "100%",
     borderRadius: 15,
     overflow: "hidden",
-    shadowColor: "#924900",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

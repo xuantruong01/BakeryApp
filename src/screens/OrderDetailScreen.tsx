@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Image,
+  Modal,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRoute, useNavigation } from "@react-navigation/native";
@@ -25,6 +26,8 @@ const OrderDetailScreen = () => {
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [imageModalVisible, setImageModalVisible] = useState(false);
+  const [selectedImage, setSelectedImage] = useState("");
 
   useEffect(() => {
     fetchOrderDetail();
@@ -87,13 +90,13 @@ const OrderDetailScreen = () => {
   const getStatusText = (status: string) => {
     switch (status) {
       case "pending":
-        return "Chờ xác nhận";
+        return t("pending");
       case "processing":
-        return "Đang xử lý";
+        return t("processing");
       case "completed":
-        return "Hoàn thành";
+        return t("completed");
       case "cancelled":
-        return "Đã hủy";
+        return t("cancelled");
       default:
         return status;
     }
@@ -154,7 +157,7 @@ const OrderDetailScreen = () => {
           color={theme.text + "30"}
         />
         <Text style={[styles.emptyText, { color: theme.text }]}>
-          Không tìm thấy đơn hàng
+          {t("orderNotFound")}
         </Text>
       </View>
     );
@@ -184,11 +187,11 @@ const OrderDetailScreen = () => {
         showsVerticalScrollIndicator={false}
       >
         {/* Mã đơn hàng & Trạng thái */}
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.background }]}>
           <View style={styles.orderHeaderRow}>
             <View style={styles.orderIdSection}>
               <Text style={[styles.label, { color: theme.text }]}>
-                Mã đơn hàng
+                {t("orderId")}
               </Text>
               <Text style={[styles.orderIdText, { color: theme.primary }]}>
                 #{order.id}
@@ -213,7 +216,7 @@ const OrderDetailScreen = () => {
         </View>
 
         {/* Thông tin thời gian */}
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.background }]}>
           <View style={styles.sectionHeader}>
             <Ionicons name="calendar-outline" size={24} color={theme.primary} />
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
@@ -229,7 +232,7 @@ const OrderDetailScreen = () => {
         </View>
 
         {/* Thông tin giao hàng */}
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.background }]}>
           <View style={styles.sectionHeader}>
             <Ionicons name="location-outline" size={24} color={theme.primary} />
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
@@ -243,13 +246,13 @@ const OrderDetailScreen = () => {
               color={theme.text + "80"}
             />
             <Text style={[styles.infoText, { color: theme.text }]}>
-              {order.name || "Chưa có tên"}
+              {order.customerName || t("noName")}
             </Text>
           </View>
           <View style={styles.infoRow}>
             <Ionicons name="call-outline" size={20} color={theme.text + "80"} />
             <Text style={[styles.infoText, { color: theme.text }]}>
-              {order.phone || "Chưa có số điện thoại"}
+              {order.customerPhone || t("noPhone")}
             </Text>
           </View>
           <View style={styles.infoRow}>
@@ -259,13 +262,13 @@ const OrderDetailScreen = () => {
               color={theme.text + "80"}
             />
             <Text style={[styles.infoText, { color: theme.text }]}>
-              {order.address || "Chưa có địa chỉ"}
+              {order.deliveryAddress || t("noAddress")}
             </Text>
           </View>
         </View>
 
         {/* Chi tiết sản phẩm */}
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.background }]}>
           <View style={styles.sectionHeader}>
             <Ionicons name="basket-outline" size={24} color={theme.primary} />
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
@@ -275,37 +278,67 @@ const OrderDetailScreen = () => {
 
           {order.items && order.items.length > 0 ? (
             order.items.map((item: any, index: number) => (
-              <View key={index} style={styles.productItem}>
+              <View
+                key={index}
+                style={[
+                  styles.productItem,
+                  { borderBottomColor: theme.lightBg },
+                ]}
+              >
                 {/* Hình ảnh sản phẩm */}
-                <View style={styles.productImageContainer}>
+                <View
+                  style={[
+                    styles.productImageContainer,
+                    { backgroundColor: theme.lightBg },
+                  ]}
+                >
                   {item.imageUrl ? (
                     <Image
                       source={{ uri: item.imageUrl }}
                       style={styles.productImage}
                     />
                   ) : (
-                    <View style={styles.noImagePlaceholder}>
-                      <Ionicons name="image-outline" size={30} color="#CCC" />
+                    <View
+                      style={[
+                        styles.noImagePlaceholder,
+                        { backgroundColor: theme.lightBg },
+                      ]}
+                    >
+                      <Ionicons
+                        name="image-outline"
+                        size={30}
+                        color={theme.text + "40"}
+                      />
                     </View>
                   )}
                 </View>
 
                 {/* Thông tin sản phẩm */}
                 <View style={styles.productInfo}>
-                  <Text style={styles.productName} numberOfLines={2}>
-                    {item.name || "Sản phẩm"}
+                  <Text
+                    style={[styles.productName, { color: theme.text }]}
+                    numberOfLines={2}
+                  >
+                    {item.name || t("product")}
                   </Text>
-                  <Text style={styles.productQuantity}>
-                    Số lượng: x{item.quantity || 1}
+                  <Text
+                    style={[
+                      styles.productQuantity,
+                      { color: theme.text + "80" },
+                    ]}
+                  >
+                    {t("quantity")}: x{item.quantity || 1}
                   </Text>
-                  <Text style={styles.productPrice}>
+                  <Text style={[styles.productPrice, { color: theme.primary }]}>
                     {formatPrice(parseInt(item.price) || 0)}
                   </Text>
                 </View>
 
                 {/* Tổng giá */}
                 <View style={styles.productTotal}>
-                  <Text style={styles.productTotalPrice}>
+                  <Text
+                    style={[styles.productTotalPrice, { color: theme.primary }]}
+                  >
                     {formatPrice(
                       (parseInt(item.price) || 0) * (item.quantity || 1)
                     )}
@@ -314,12 +347,14 @@ const OrderDetailScreen = () => {
               </View>
             ))
           ) : (
-            <Text style={styles.noItemsText}>Không có sản phẩm nào</Text>
+            <Text style={[styles.noItemsText, { color: theme.text + "60" }]}>
+              {t("noProducts")}
+            </Text>
           )}
         </View>
 
         {/* Tổng tiền */}
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.background }]}>
           <View style={styles.totalContainer}>
             <View style={styles.totalRow}>
               <Text style={[styles.totalLabel, { color: theme.text }]}>
@@ -334,7 +369,7 @@ const OrderDetailScreen = () => {
                 {t("shippingFee")}:
               </Text>
               <Text style={[styles.totalValue, { color: theme.text }]}>
-                Miễn phí
+                {t("free")}
               </Text>
             </View>
             <View
@@ -342,7 +377,7 @@ const OrderDetailScreen = () => {
             />
             <View style={styles.totalRow}>
               <Text style={[styles.grandTotalLabel, { color: theme.primary }]}>
-                Tổng cộng:
+                {t("total")}:
               </Text>
               <Text style={[styles.grandTotalValue, { color: theme.primary }]}>
                 {formatPrice(order.total || 0)}
@@ -352,7 +387,7 @@ const OrderDetailScreen = () => {
         </View>
 
         {/* Thông tin thanh toán */}
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.background }]}>
           <View style={styles.sectionHeader}>
             <Ionicons name="card-outline" size={24} color={theme.primary} />
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
@@ -376,10 +411,15 @@ const OrderDetailScreen = () => {
 
           {/* Hiển thị thông tin ngân hàng nếu thanh toán bằng chuyển khoản */}
           {order.paymentMethod === "bank" && order.bankInfo && (
-            <View style={styles.bankInfoContainer}>
+            <View
+              style={[
+                styles.bankInfoContainer,
+                { backgroundColor: theme.lightBg },
+              ]}
+            >
               <View style={styles.bankInfoRow}>
                 <Text style={[styles.bankInfoLabel, { color: theme.text }]}>
-                  Ngân hàng:
+                  {t("bank")}:
                 </Text>
                 <Text style={[styles.bankInfoValue, { color: theme.text }]}>
                   {order.bankInfo.bankName}
@@ -387,24 +427,28 @@ const OrderDetailScreen = () => {
               </View>
               <View style={styles.bankInfoRow}>
                 <Text style={[styles.bankInfoLabel, { color: theme.text }]}>
-                  Số tài khoản:
+                  {t("accountNumber")}:
                 </Text>
                 <Text style={[styles.bankInfoValue, { color: theme.text }]}>
                   {order.bankInfo.accountNumber}
                 </Text>
               </View>
               <View style={styles.bankInfoRow}>
-                <Text style={styles.bankInfoLabel}>Chủ tài khoản:</Text>
-                <Text style={styles.bankInfoValue}>
+                <Text style={[styles.bankInfoLabel, { color: theme.text }]}>
+                  {t("accountOwner")}:
+                </Text>
+                <Text style={[styles.bankInfoValue, { color: theme.text }]}>
                   {order.bankInfo.accountOwner}
                 </Text>
               </View>
               <View style={styles.bankInfoRow}>
-                <Text style={styles.bankInfoLabel}>Số tiền:</Text>
+                <Text style={[styles.bankInfoLabel, { color: theme.text }]}>
+                  {t("amount")}:
+                </Text>
                 <Text
                   style={[
                     styles.bankInfoValue,
-                    { color: "#E58E26", fontWeight: "bold" },
+                    { color: theme.primary, fontWeight: "bold" },
                   ]}
                 >
                   {formatPrice(order.total || 0)}
@@ -412,42 +456,64 @@ const OrderDetailScreen = () => {
               </View>
 
               {/* Hiển thị ảnh xác nhận chuyển khoản nếu có */}
-              {order.paymentProof && (
+              {order.paymentProofBase64 && (
                 <View style={{ alignItems: "center", marginTop: 16 }}>
                   <Text
-                    style={{ fontSize: 15, fontWeight: "600", marginBottom: 8 }}
-                  >
-                    Ảnh xác nhận chuyển khoản:
-                  </Text>
-                  <Image
-                    source={{
-                      uri: order.paymentProof.startsWith("data:")
-                        ? order.paymentProof
-                        : `data:image/jpeg;base64,${order.paymentProof}`,
-                    }}
                     style={{
-                      width: 200,
-                      height: 200,
-                      borderRadius: 12,
-                      borderWidth: 1,
-                      borderColor: "#E58E26",
+                      fontSize: 15,
+                      fontWeight: "600",
+                      marginBottom: 8,
+                      color: theme.text,
                     }}
-                    resizeMode="contain"
-                  />
+                  >
+                    {t("paymentProof")}:
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      const imageUri = order.paymentProofBase64.startsWith(
+                        "data:"
+                      )
+                        ? order.paymentProofBase64
+                        : `data:image/jpeg;base64,${order.paymentProofBase64}`;
+                      console.log("Opening image:", imageUri.substring(0, 50));
+                      setSelectedImage(imageUri);
+                      setImageModalVisible(true);
+                    }}
+                  >
+                    <Image
+                      source={{
+                        uri: order.paymentProofBase64.startsWith("data:")
+                          ? order.paymentProofBase64
+                          : `data:image/jpeg;base64,${order.paymentProofBase64}`,
+                      }}
+                      style={{
+                        width: 200,
+                        height: 200,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: theme.primary,
+                      }}
+                      resizeMode="contain"
+                      onError={(e) =>
+                        console.log("Image load error:", e.nativeEvent.error)
+                      }
+                    />
+                  </TouchableOpacity>
                 </View>
               )}
 
               {/* Thông báo cho admin */}
               {userRole === "admin" && order.status === "pending" && (
-                <View style={styles.adminNote}>
+                <View
+                  style={[styles.adminNote, { backgroundColor: theme.lightBg }]}
+                >
                   <Ionicons
                     name="information-circle"
                     size={20}
-                    color="#2196F3"
+                    color={theme.accent}
                   />
-                  <Text style={styles.adminNoteText}>
-                    Vui lòng kiểm tra tài khoản ngân hàng và xác nhận khi đã
-                    nhận được tiền.
+                  <Text style={[styles.adminNoteText, { color: theme.text }]}>
+                    {t("adminBankCheckNote")}
                   </Text>
                 </View>
               )}
@@ -467,7 +533,7 @@ const OrderDetailScreen = () => {
           >
             <TouchableOpacity
               style={{
-                backgroundColor: "#28A745",
+                backgroundColor: theme.secondary,
                 padding: 14,
                 borderRadius: 8,
                 flexDirection: "row",
@@ -481,7 +547,7 @@ const OrderDetailScreen = () => {
               <Text
                 style={{ color: "#FFF", fontWeight: "bold", marginLeft: 8 }}
               >
-                Xác nhận đơn
+                {t("confirmOrder")}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -500,12 +566,40 @@ const OrderDetailScreen = () => {
               <Text
                 style={{ color: "#FFF", fontWeight: "bold", marginLeft: 8 }}
               >
-                Hủy đơn
+                {t("cancelOrder")}
               </Text>
             </TouchableOpacity>
           </View>
         )}
       </ScrollView>
+
+      {/* Image Modal */}
+      <Modal
+        visible={imageModalVisible}
+        transparent={true}
+        onRequestClose={() => setImageModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalContainer}
+          activeOpacity={1}
+          onPress={() => setImageModalVisible(false)}
+        >
+          <TouchableOpacity
+            style={styles.modalCloseButton}
+            onPress={() => setImageModalVisible(false)}
+          >
+            <Ionicons name="close-circle" size={40} color="#FFF" />
+          </TouchableOpacity>
+          <Image
+            source={{ uri: selectedImage }}
+            style={styles.modalImage}
+            resizeMode="contain"
+            onError={(e) =>
+              console.log("Modal image error:", e.nativeEvent.error)
+            }
+          />
+        </TouchableOpacity>
+      </Modal>
     </LinearGradient>
   );
 };
@@ -520,7 +614,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#FFF5E6",
   },
   header: {
     flexDirection: "row",
@@ -536,14 +629,12 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 22,
     fontWeight: "bold",
-    color: "#924900",
   },
   scrollView: {
     flex: 1,
     paddingHorizontal: 20,
   },
   card: {
-    backgroundColor: "#FFF",
     borderRadius: 15,
     padding: 18,
     marginBottom: 15,
@@ -563,13 +654,11 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 13,
-    color: "#666",
     marginBottom: 4,
   },
   orderIdText: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#333",
   },
   statusBadge: {
     flexDirection: "row",
@@ -592,7 +681,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#924900",
     marginLeft: 10,
   },
   infoRow: {
@@ -602,7 +690,6 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 15,
-    color: "#333",
     marginLeft: 10,
     flex: 1,
   },
@@ -611,14 +698,12 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     paddingBottom: 15,
     borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
   },
   productImageContainer: {
     width: 80,
     height: 80,
     borderRadius: 10,
     overflow: "hidden",
-    backgroundColor: "#F5F5F5",
   },
   productImage: {
     width: "100%",
@@ -630,7 +715,6 @@ const styles = StyleSheet.create({
     height: "100%",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#F5F5F5",
   },
   productInfo: {
     flex: 1,
@@ -640,18 +724,15 @@ const styles = StyleSheet.create({
   productName: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#333",
     marginBottom: 4,
   },
   productQuantity: {
     fontSize: 14,
-    color: "#666",
     marginBottom: 4,
   },
   productPrice: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#924900",
   },
   productTotal: {
     justifyContent: "center",
@@ -661,11 +742,9 @@ const styles = StyleSheet.create({
   productTotalPrice: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#924900",
   },
   noItemsText: {
     fontSize: 15,
-    color: "#999",
     textAlign: "center",
     paddingVertical: 20,
   },
@@ -680,35 +759,28 @@ const styles = StyleSheet.create({
   },
   totalLabel: {
     fontSize: 15,
-    color: "#666",
   },
   totalValue: {
     fontSize: 15,
-    color: "#333",
     fontWeight: "500",
   },
   divider: {
     height: 1,
-    backgroundColor: "#E0E0E0",
     marginVertical: 10,
   },
   grandTotalLabel: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#924900",
   },
   grandTotalValue: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#924900",
   },
   emptyText: {
     fontSize: 18,
-    color: "#999",
     marginTop: 15,
   },
   bankInfoContainer: {
-    backgroundColor: "#F8F9FA",
     borderRadius: 10,
     padding: 15,
     marginTop: 10,
@@ -721,17 +793,14 @@ const styles = StyleSheet.create({
   },
   bankInfoLabel: {
     fontSize: 14,
-    color: "#666",
     fontWeight: "500",
   },
   bankInfoValue: {
     fontSize: 14,
-    color: "#333",
     fontWeight: "600",
   },
   adminNote: {
     flexDirection: "row",
-    backgroundColor: "#E3F2FD",
     borderRadius: 8,
     padding: 12,
     marginTop: 12,
@@ -739,8 +808,24 @@ const styles = StyleSheet.create({
   },
   adminNoteText: {
     fontSize: 13,
-    color: "#1976D2",
     flex: 1,
     lineHeight: 18,
+  },
+  // Modal styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalCloseButton: {
+    position: "absolute",
+    top: 50,
+    right: 20,
+    zIndex: 1,
+  },
+  modalImage: {
+    width: "90%",
+    height: "80%",
   },
 });

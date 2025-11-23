@@ -263,7 +263,6 @@ export default AddAddressScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFF8F0", // 👈 Màu nền kem (chủ đề tiệm bánh),
     marginTop: 30,
   },
   contentContainer: {
@@ -285,23 +284,19 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: "bold",
-    color: "#924900",
     textAlign: "center",
   },
   infoBox: {
     flexDirection: "row",
-    backgroundColor: "#FFF3E0",
     borderRadius: 10,
     padding: 12,
     marginBottom: 20,
     borderLeftWidth: 4,
-    borderLeftColor: "#924900",
     alignItems: "center",
   },
   infoText: {
     flex: 1,
     fontSize: 14,
-    color: "#924900",
     marginLeft: 10,
     lineHeight: 20,
   },
@@ -314,18 +309,14 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#A15807", // 👈 Màu nâu nhạt hơn
     marginBottom: 8,
   },
   input: {
-    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     paddingHorizontal: 15,
     paddingVertical: 14,
     fontSize: 16,
-    color: "#333",
     borderWidth: 1,
-    borderColor: "#F0E9E0", // 👈 Border rất nhạt
     // Thêm Shadow (bóng mờ)
     ...Platform.select({
       ios: {
@@ -355,7 +346,6 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   hintText: {
-    color: "#924900",
     marginTop: 6,
     marginLeft: 4,
     fontSize: 13,
@@ -374,7 +364,7 @@ const styles = StyleSheet.create({
     // Thêm Shadow cho nút
     ...Platform.select({
       ios: {
-        shadowColor: "#924900",
+        shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 5,

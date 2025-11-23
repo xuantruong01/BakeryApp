@@ -26,8 +26,6 @@ const SettingsScreen = () => {
     { id: "orange", name: "Cam", color: "#E58E26", icon: "sunny" },
     { id: "blue", name: "Xanh dương", color: "#4A90E2", icon: "water" },
     { id: "green", name: "Xanh lá", color: "#27AE60", icon: "leaf" },
-    { id: "purple", name: "Tím", color: "#9B59B6", icon: "flower" },
-    { id: "red", name: "Đỏ", color: "#E74C3C", icon: "flame" },
   ];
 
   const languages = [
@@ -376,13 +374,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 16,
     borderRadius: 12,
-    backgroundColor: "#F5F5F5",
     marginBottom: 12,
   },
   themeItemActive: {
-    backgroundColor: "#E8F5E9",
     borderWidth: 2,
-    borderColor: "#4CAF50",
   },
   themeColor: {
     width: 48,
@@ -396,7 +391,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: "600",
-    color: "#333",
   },
 
   // Language
@@ -408,13 +402,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 16,
     borderRadius: 12,
-    backgroundColor: "#F5F5F5",
     marginBottom: 12,
   },
   languageItemActive: {
-    backgroundColor: "#E3F2FD",
     borderWidth: 2,
-    borderColor: "#2196F3",
   },
   languageFlag: {
     fontSize: 32,
@@ -424,20 +415,17 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: "600",
-    color: "#333",
   },
 
   // Modal Close
   modalCloseButton: {
     padding: 16,
     borderRadius: 12,
-    backgroundColor: "#F5F5F5",
     alignItems: "center",
   },
   modalCloseText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#666",
   },
 });
 
