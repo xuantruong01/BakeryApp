@@ -17,6 +17,7 @@ import AdminNotificationsScreen from "../screens/admin/AdminNotificationsScreen"
 import AdminSettingsScreen from "../screens/admin/AdminSettingsScreen";
 import AdminHelpScreen from "../screens/admin/AdminHelpScreen";
 import ChatBotScreen from "../screens/ChatBotScreen";
+import SettingsScreen from "../screens/SettingsScreen";
 
 const Stack = createStackNavigator();
 
@@ -105,6 +106,13 @@ export default function AppNavigator() {
         name="OrderDetail"
         component={OrderDetailScreen}
         options={{ headerShown: false, title: "Chi tiết đơn hàng" }}
+      />
+
+      {/* Màn hình user settings */}
+      <Stack.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{ headerShown: false, title: "Cài đặt" }}
       />
 
       {/* Màn hình admin */}

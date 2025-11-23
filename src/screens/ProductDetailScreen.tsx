@@ -15,8 +15,10 @@ import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { doc, getDoc, setDoc, updateDoc, increment } from "firebase/firestore";
 import { db } from "../services/firebaseConfig";
+import { useApp } from "../contexts/AppContext";
 
 export default function ProductDetailScreen({ route, navigation }: any) {
+  const { theme, t } = useApp();
   const { product } = route.params;
   const [quantity, setQuantity] = useState(1);
 
@@ -27,12 +29,12 @@ export default function ProductDetailScreen({ route, navigation }: any) {
       const user = userJson ? JSON.parse(userJson) : null;
 
       if (!user?.uid) {
-        Alert.alert("⚠️", "Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng!");
+        Alert.alert("⚠️", t("pleaseLogin"));
         return;
       }
 
       if (product.stock === 0) {
-        Alert.alert("⚠️", "Sản phẩm đã hết hàng!");
+        Alert.alert("⚠️", t("productOutOfStock"));
         return;
       }
 
@@ -52,10 +54,13 @@ export default function ProductDetailScreen({ route, navigation }: any) {
         });
       }
 
-      Alert.alert("🛒", `Đã thêm ${quantity} sản phẩm vào giỏ hàng!`);
+      Alert.alert(
+        "🛒",
+        `${t("added")} ${quantity} ${t("product")} ${t("toCart")}!`
+      );
       setQuantity(1);
     } catch (error) {
-      console.error("❌ Lỗi khi thêm vào giỏ hàng:", error);
+      console.error("❌ Error adding to cart:", error);
     }
   };
 
@@ -72,7 +77,7 @@ export default function ProductDetailScreen({ route, navigation }: any) {
   /* ------------------- Render giao diện ------------------- */
   return (
     <LinearGradient
-      colors={["#FFF5E6", "#FFE8CC", "#FFFFFF"]}
+      colors={[theme.lightBg, theme.background, "#FFFFFF"]}
       style={styles.gradient}
     >
       <SafeAreaView style={styles.safeArea}>
@@ -88,9 +93,11 @@ export default function ProductDetailScreen({ route, navigation }: any) {
               onPress={() => navigation.goBack()}
               activeOpacity={0.7}
             >
-              <Ionicons name="arrow-back" size={28} color="#924900" />
+              <Ionicons name="arrow-back" size={28} color={theme.primary} />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Chi tiết sản phẩm</Text>
+            <Text style={[styles.headerTitle, { color: theme.text }]}>
+              {t("productDetails")}
+            </Text>
             <View style={{ width: 28 }} />
           </View>
 
@@ -106,31 +113,60 @@ export default function ProductDetailScreen({ route, navigation }: any) {
           )}
 
           {/* Info Card */}
-          <View style={styles.infoCard}>
-            <Text style={styles.name}>{product.name}</Text>
-            
+          <View
+            style={[
+              styles.infoCard,
+              {
+                backgroundColor: theme.background,
+                borderColor: theme.primary + "30",
+              },
+            ]}
+          >
+            <Text style={[styles.name, { color: theme.text }]}>
+              {product.name}
+            </Text>
+
             <View style={styles.priceRow}>
-              <Text style={styles.price}>
+              <Text style={[styles.price, { color: theme.primary }]}>
                 {Number(product.price).toLocaleString()}đ
               </Text>
-              <View style={styles.stockBadge}>
-                <Ionicons 
-                  name={product.stock > 0 ? "checkmark-circle" : "close-circle"} 
-                  size={16} 
-                  color={product.stock > 0 ? "#4CAF50" : "#F44336"} 
+              <View
+                style={[styles.stockBadge, { backgroundColor: theme.lightBg }]}
+              >
+                <Ionicons
+                  name={product.stock > 0 ? "checkmark-circle" : "close-circle"}
+                  size={16}
+                  color={product.stock > 0 ? theme.secondary : "#F44336"}
                 />
-                <Text style={styles.stockText}>
-                  {product.stock > 0 ? `Còn ${product.stock}` : "Hết hàng"}
+                <Text style={[styles.stockText, { color: theme.text + "80" }]}>
+                  {product.stock > 0
+                    ? `${t("inStock")}: ${product.stock}`
+                    : t("outOfStock")}
                 </Text>
               </View>
             </View>
 
-            <View style={styles.divider} />
+            <View
+              style={[
+                styles.divider,
+                { backgroundColor: theme.primary + "30" },
+              ]}
+            />
 
             {/* Quantity Selector */}
             <View style={styles.qtyContainer}>
-              <Text style={styles.qtyLabel}>Số lượng</Text>
-              <View style={styles.qtyBox}>
+              <Text style={[styles.qtyLabel, { color: theme.text }]}>
+                {t("quantity")}
+              </Text>
+              <View
+                style={[
+                  styles.qtyBox,
+                  {
+                    backgroundColor: theme.lightBg,
+                    borderColor: theme.primary + "40",
+                  },
+                ]}
+              >
                 <TouchableOpacity
                   style={styles.qtyBtn}
                   onPress={decrease}
@@ -138,8 +174,10 @@ export default function ProductDetailScreen({ route, navigation }: any) {
                 >
                   <Text
                     style={[
-                      styles.qtySymbol,
-                      (quantity <= 1 || product.stock === 0) && styles.qtyDisabled,
+                      { fontSize: 24, fontWeight: "700", color: theme.primary },
+                      (quantity <= 1 || product.stock === 0) && {
+                        color: theme.text + "40",
+                      },
                     ]}
                   >
                     −
@@ -147,7 +185,7 @@ export default function ProductDetailScreen({ route, navigation }: any) {
                 </TouchableOpacity>
 
                 <TextInput
-                  style={styles.qtyInput}
+                  style={[styles.qtyInput, { color: theme.text }]}
                   keyboardType="numeric"
                   editable={product.stock > 0}
                   value={String(quantity)}
@@ -167,13 +205,17 @@ export default function ProductDetailScreen({ route, navigation }: any) {
                 <TouchableOpacity
                   style={styles.qtyBtn}
                   onPress={increase}
-                  disabled={product.stock === 0 || quantity >= (product.stock ?? 9999)}
+                  disabled={
+                    product.stock === 0 || quantity >= (product.stock ?? 9999)
+                  }
                 >
                   <Text
                     style={[
-                      styles.qtySymbol,
-                      (product.stock === 0 || quantity >= (product.stock ?? 9999)) &&
-                        styles.qtyDisabled,
+                      { fontSize: 24, fontWeight: "700", color: theme.primary },
+                      (product.stock === 0 ||
+                        quantity >= (product.stock ?? 9999)) && {
+                        color: theme.text + "40",
+                      },
                     ]}
                   >
                     +
@@ -182,17 +224,32 @@ export default function ProductDetailScreen({ route, navigation }: any) {
               </View>
             </View>
 
-            <View style={styles.divider} />
+            <View
+              style={[
+                styles.divider,
+                { backgroundColor: theme.primary + "30" },
+              ]}
+            />
 
             {/* Description */}
-            <Text style={styles.sectionTitle}>Mô tả sản phẩm</Text>
-            <Text style={styles.desc}>
-              {product.description || "Không có mô tả chi tiết."}
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>
+              {t("description")}
+            </Text>
+            <Text style={[styles.desc, { color: theme.text + "80" }]}>
+              {product.description || t("noDescription")}
             </Text>
           </View>
         </ScrollView>
         {/* Bottom Bar */}
-        <View style={styles.bottomBar}>
+        <View
+          style={[
+            styles.bottomBar,
+            {
+              backgroundColor: theme.background,
+              borderTopColor: theme.primary + "30",
+            },
+          ]}
+        >
           <View style={styles.buttonRow}>
             <TouchableOpacity
               style={styles.btnWrapper}
@@ -201,12 +258,16 @@ export default function ProductDetailScreen({ route, navigation }: any) {
               disabled={product.stock === 0}
             >
               <LinearGradient
-                colors={product.stock === 0 ? ["#CCC", "#999"] : ["#E58E26", "#D67A1A"]}
+                colors={
+                  product.stock === 0
+                    ? ([theme.text + "40", theme.text + "60"] as any)
+                    : (theme.aiGradient as any)
+                }
                 style={styles.btnAddCart}
               >
                 <Ionicons name="cart-outline" size={20} color="#FFF" />
                 <Text style={styles.btnText}>
-                  {product.stock === 0 ? "Hết hàng" : "Thêm vào giỏ"}
+                  {product.stock === 0 ? t("outOfStock") : t("addToCart")}
                 </Text>
               </LinearGradient>
             </TouchableOpacity>
@@ -222,12 +283,16 @@ export default function ProductDetailScreen({ route, navigation }: any) {
               disabled={product.stock === 0}
             >
               <LinearGradient
-                colors={product.stock === 0 ? ["#CCC", "#999"] : ["#C06000", "#924900", "#6B3600"]}
+                colors={
+                  product.stock === 0
+                    ? ([theme.text + "40", theme.text + "60"] as any)
+                    : ([theme.secondary, theme.primary, theme.accent] as any)
+                }
                 style={styles.btnCheckout}
               >
                 <Ionicons name="flash-outline" size={20} color="#FFF" />
                 <Text style={styles.btnText}>
-                  {product.stock === 0 ? "Không thể đặt" : "Mua ngay"}
+                  {product.stock === 0 ? t("cannotOrder") : t("buyNow")}
                 </Text>
               </LinearGradient>
             </TouchableOpacity>
@@ -258,7 +323,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#924900",
   },
 
   imageContainer: {
@@ -275,28 +339,24 @@ const styles = StyleSheet.create({
   image: {
     width: "100%",
     height: 280,
-    backgroundColor: "#F5F5F5",
   },
 
   infoCard: {
-    backgroundColor: "#FFF",
     borderRadius: 24,
     padding: 24,
     marginHorizontal: 20,
     marginTop: 20,
-    shadowColor: "#924900",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.2,
     shadowRadius: 16,
     elevation: 8,
     borderWidth: 1,
-    borderColor: "#FFE8CC",
   },
 
   name: {
     fontSize: 26,
     fontWeight: "bold",
-    color: "#333",
     marginBottom: 12,
     letterSpacing: 0.3,
   },
@@ -309,14 +369,12 @@ const styles = StyleSheet.create({
   },
   price: {
     fontSize: 28,
-    color: "#E58E26",
     fontWeight: "bold",
     letterSpacing: 0.5,
   },
   stockBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F5F5F5",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
@@ -324,13 +382,11 @@ const styles = StyleSheet.create({
   },
   stockText: {
     fontSize: 13,
-    color: "#666",
     fontWeight: "600",
   },
 
   divider: {
     height: 2,
-    backgroundColor: "#FFE8CC",
     marginVertical: 20,
   },
 
@@ -340,19 +396,16 @@ const styles = StyleSheet.create({
   qtyLabel: {
     fontSize: 17,
     fontWeight: "700",
-    color: "#333",
     marginBottom: 12,
     letterSpacing: 0.2,
   },
   qtyBox: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFBF5",
     borderRadius: 16,
     paddingHorizontal: 6,
     alignSelf: "flex-start",
     borderWidth: 2,
-    borderColor: "#E8D5C4",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -363,34 +416,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
-  qtySymbol: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#E58E26",
-  },
-  qtyDisabled: {
-    color: "#CCC",
-  },
   qtyInput: {
     width: 60,
     height: 44,
     textAlign: "center",
     fontSize: 18,
     fontWeight: "600",
-    color: "#333",
     marginHorizontal: 8,
   },
 
   sectionTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#333",
     marginBottom: 10,
     letterSpacing: 0.2,
   },
   desc: {
     fontSize: 15,
-    color: "#666",
     lineHeight: 24,
   },
 
@@ -399,9 +441,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "#FFF",
     borderTopWidth: 2,
-    borderTopColor: "#FFE8CC",
     paddingVertical: 18,
     paddingHorizontal: 20,
     paddingBottom: 24,
@@ -425,7 +465,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    shadowColor: "#E58E26",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.4,
     shadowRadius: 12,
@@ -438,7 +478,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    shadowColor: "#924900",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.4,
     shadowRadius: 12,

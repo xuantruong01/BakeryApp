@@ -7,10 +7,13 @@ import AdminProductsScreen from "../screens/admin/AdminProductsScreen";
 import AdminCategoriesScreen from "../screens/admin/AdminCategoriesScreen";
 import AdminStatisticsScreen from "../screens/admin/AdminStatisticsScreen";
 import AdminProfileScreen from "../screens/admin/AdminProfileScreen";
+import { useApp } from "../contexts/AppContext";
 
 const Tab = createBottomTabNavigator();
 
 const AdminTabNavigator = () => {
+  const { theme, t } = useApp();
+
   return (
     <Tab.Navigator
       id={undefined}
@@ -34,7 +37,7 @@ const AdminTabNavigator = () => {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: "#FF6B6B",
+        tabBarActiveTintColor: theme.primary,
         tabBarInactiveTintColor: "#999",
         tabBarStyle: {
           backgroundColor: "#FFFFFF",
@@ -45,7 +48,7 @@ const AdminTabNavigator = () => {
           paddingTop: 8,
         },
         headerStyle: {
-          backgroundColor: "#FF6B6B",
+          backgroundColor: theme.primary,
         },
         headerTintColor: "#FFFFFF",
         headerTitleStyle: {
@@ -58,8 +61,8 @@ const AdminTabNavigator = () => {
         component={AdminHomeScreen}
         options={{
           headerShown: false,
-          tabBarLabel: "Tổng quan",
-          headerTitle: "Dashboard",
+          tabBarLabel: t("overview"),
+          headerTitle: t("dashboard"),
         }}
       />
       <Tab.Screen
@@ -67,8 +70,8 @@ const AdminTabNavigator = () => {
         component={AdminOrdersScreen}
         options={{
           headerShown: false,
-          tabBarLabel: "Đơn hàng",
-          headerTitle: "Quản lý đơn hàng",
+          tabBarLabel: t("orders"),
+          headerTitle: t("orderManagement"),
         }}
       />
       <Tab.Screen
@@ -76,8 +79,8 @@ const AdminTabNavigator = () => {
         component={AdminProductsScreen}
         options={{
           headerShown: false,
-          tabBarLabel: "Sản phẩm",
-          headerTitle: "Quản lý sản phẩm",
+          tabBarLabel: t("products"),
+          headerTitle: t("productManagement"),
         }}
       />
       <Tab.Screen
@@ -85,8 +88,8 @@ const AdminTabNavigator = () => {
         component={AdminStatisticsScreen}
         options={{
           headerShown: false,
-          tabBarLabel: "Thống kê",
-          headerTitle: "Thống kê chi tiết",
+          tabBarLabel: t("statistics"),
+          headerTitle: t("detailedStatistics"),
         }}
       />
       <Tab.Screen
@@ -94,7 +97,7 @@ const AdminTabNavigator = () => {
         component={AdminProfileScreen}
         options={{
           headerShown: false,
-          tabBarLabel: "Cá nhân",
+          tabBarLabel: t("personalInfo"),
           headerTitle: "Thông tin cá nhân",
         }}
       />

@@ -49,7 +49,7 @@ const AdminCategoriesScreen = ({ navigation }) => {
       setCategories(categoriesData);
     } catch (error) {
       console.error("Error fetching categories:", error);
-      Alert.alert("Lỗi", "Không thể tải danh sách danh mục");
+      Alert.alert(t("error"), t("cannotLoadCategories"));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -95,7 +95,7 @@ const AdminCategoriesScreen = ({ navigation }) => {
         // Cập nhật danh mục
         const categoryRef = doc(db, "categories", editingCategory.id);
         await updateDoc(categoryRef, categoryData);
-        Alert.alert("Thành công", "Đã cập nhật danh mục");
+        Alert.alert(t("success"), t("categoryUpdated"));
       } else {
         // Thêm danh mục mới
         await addDoc(collection(db, "categories"), {
@@ -109,27 +109,29 @@ const AdminCategoriesScreen = ({ navigation }) => {
       fetchCategories();
     } catch (error) {
       console.error("Error saving category:", error);
-      Alert.alert("Lỗi", "Không thể lưu danh mục");
+      Alert.alert(t("error"), t("cannotSaveCategory"));
     }
   };
 
   const handleDeleteCategory = (categoryId, categoryName) => {
     Alert.alert(
-      "Xóa danh mục",
-      `Bạn có chắc muốn xóa danh mục "${categoryName}"?\n\nLưu ý: Các sản phẩm thuộc danh mục này sẽ không bị xóa.`,
+      t("deleteCategory"),
+      `${t("confirmDeleteCategory")} "${categoryName}"?\n\n${t(
+        "categoryDeleteNote"
+      )}`,
       [
-        { text: "Hủy", style: "cancel" },
+        { text: t("cancel"), style: "cancel" },
         {
-          text: "Xóa",
+          text: t("delete"),
           style: "destructive",
           onPress: async () => {
             try {
               await deleteDoc(doc(db, "categories", categoryId));
-              Alert.alert("Thành công", "Đã xóa danh mục");
+              Alert.alert(t("success"), t("categoryDeleted"));
               fetchCategories();
             } catch (error) {
               console.error("Error deleting category:", error);
-              Alert.alert("Lỗi", "Không thể xóa danh mục");
+              Alert.alert(t("error"), t("cannotDeleteCategory"));
             }
           },
         },
@@ -179,7 +181,7 @@ const AdminCategoriesScreen = ({ navigation }) => {
     <View style={styles.container}>
       <TouchableOpacity style={styles.addButton} onPress={openAddModal}>
         <Ionicons name="add-circle" size={24} color="#FFF" />
-        <Text style={styles.addButtonText}>Thêm danh mục</Text>
+        <Text style={styles.addButtonText}>{t("addCategory")}</Text>
       </TouchableOpacity>
 
       <FlatList
@@ -209,7 +211,7 @@ const AdminCategoriesScreen = ({ navigation }) => {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
-                {editingCategory ? "Sửa danh mục" : "Thêm danh mục"}
+                {editingCategory ? t("editCategory") : t("addCategory")}
               </Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
                 <Ionicons name="close" size={28} color="#333" />

@@ -23,11 +23,14 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 import { Ionicons } from "@expo/vector-icons";
+import { useApp } from "../contexts/AppContext";
 
 export default function CartScreen() {
   const navigation = useNavigation<any>();
+  const { theme, t } = useApp();
   const [loading, setLoading] = useState(true);
   const [cartItems, setCartItems] = useState<any[]>([]);
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [total, setTotal] = useState(0);
 
   useEffect(() => {
@@ -75,12 +78,8 @@ export default function CartScreen() {
 
         const filteredItems = updatedItems.filter((i) => i.quantity > 0);
         setCartItems(filteredItems);
-
-        const totalPrice = filteredItems.reduce(
-          (sum, item) => sum + parseInt(item.price) * item.quantity,
-          0
-        );
-        setTotal(totalPrice);
+        // Auto-select all items on first load
+        setSelectedItems(filteredItems.map((item) => item.id));
       } catch (error) {
         console.error("🔥 Lỗi khi lấy giỏ hàng:", error);
       } finally {
@@ -91,6 +90,30 @@ export default function CartScreen() {
     const unsubscribe = navigation.addListener("focus", fetchCart);
     return unsubscribe;
   }, [navigation]);
+
+  // Recalculate total when selected items change
+  useEffect(() => {
+    const totalPrice = cartItems
+      .filter((item) => selectedItems.includes(item.id))
+      .reduce((sum, item) => sum + parseInt(item.price) * item.quantity, 0);
+    setTotal(totalPrice);
+  }, [selectedItems, cartItems]);
+
+  const toggleSelectItem = (itemId: string) => {
+    setSelectedItems((prev) =>
+      prev.includes(itemId)
+        ? prev.filter((id) => id !== itemId)
+        : [...prev, itemId]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedItems.length === cartItems.length) {
+      setSelectedItems([]);
+    } else {
+      setSelectedItems(cartItems.map((item) => item.id));
+    }
+  };
 
   const updateQuantity = async (item: any, delta: number) => {
     try {
@@ -103,8 +126,8 @@ export default function CartScreen() {
 
       if (newQty > stock) {
         Alert.alert(
-          "⚠️ Vượt quá tồn kho",
-          `Chỉ còn ${stock} sản phẩm trong kho.`
+          `⚠️ ${t("exceedsStock")}`,
+          `${t("onlyXInStock")} ${stock} ${t("inStock")}`
         );
         return;
       }
@@ -119,42 +142,47 @@ export default function CartScreen() {
       setCartItems((prev) =>
         prev.map((i) => (i.id === item.id ? { ...i, quantity: newQty } : i))
       );
-      setTotal((prev) => prev + delta * parseInt(item.price));
     } catch (error) {
       console.error("❌ Lỗi khi cập nhật số lượng:", error);
     }
   };
 
   const removeItem = async (item: any) => {
-    Alert.alert("Xóa sản phẩm", `Xóa "${item.name}" khỏi giỏ hàng?`, [
-      { text: "Hủy", style: "cancel" },
-      {
-        text: "Xóa",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            const userJson = await AsyncStorage.getItem("user");
-            const user = userJson ? JSON.parse(userJson) : null;
-            if (!user?.uid) return;
+    Alert.alert(
+      t("deleteProductFromCart"),
+      `${t("confirmDelete")} "${item.name}" ${t("confirmRemoveFromCart")}`,
+      [
+        { text: t("cancel"), style: "cancel" },
+        {
+          text: t("confirmDelete"),
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const userJson = await AsyncStorage.getItem("user");
+              const user = userJson ? JSON.parse(userJson) : null;
+              if (!user?.uid) return;
 
-            const itemRef = doc(db, "carts", user.uid, "items", item.id);
-            await deleteDoc(itemRef);
+              const itemRef = doc(db, "carts", user.uid, "items", item.id);
+              await deleteDoc(itemRef);
 
-            setCartItems((prev) => prev.filter((i) => i.id !== item.id));
-            setTotal((prev) => prev - item.quantity * parseInt(item.price));
-          } catch (error) {
-            console.error("❌ Lỗi khi xóa sản phẩm:", error);
-          }
+              setCartItems((prev) => prev.filter((i) => i.id !== item.id));
+              setSelectedItems((prev) => prev.filter((id) => id !== item.id));
+            } catch (error) {
+              console.error("❌ Lỗi khi xóa sản phẩm:", error);
+            }
+          },
         },
-      },
-    ]);
+      ]
+    );
   };
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView
+        style={[styles.safeArea, { backgroundColor: theme.background }]}
+      >
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#924900" />
+          <ActivityIndicator size="large" color={theme.primary} />
         </View>
       </SafeAreaView>
     );
@@ -163,35 +191,83 @@ export default function CartScreen() {
   const isEmpty = cartItems.length === 0;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: theme.background }]}
+    >
       <View style={styles.container}>
         {/* HEADER */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.headerTitle}>Giỏ hàng của bạn</Text>
-            <Text style={styles.headerSubtitle}>
-              Kiểm tra lại trước khi đặt món nhé!
+            <Text style={[styles.headerTitle, { color: theme.primary }]}>
+              {t("myCart")}
+            </Text>
+            <Text style={[styles.headerSubtitle, { color: theme.text }]}>
+              {t("checkBeforeOrder")}
             </Text>
           </View>
-          <View style={styles.headerIconCircle}>
+          <View
+            style={[
+              styles.headerIconCircle,
+              { backgroundColor: theme.primary },
+            ]}
+          >
             <Ionicons name="cart" size={26} color="#fff" />
           </View>
         </View>
 
+        {/* SELECT ALL */}
+        {!isEmpty && (
+          <View
+            style={[
+              styles.selectAllContainer,
+              { backgroundColor: theme.background },
+            ]}
+          >
+            <TouchableOpacity
+              style={styles.selectAllButton}
+              onPress={toggleSelectAll}
+            >
+              <Ionicons
+                name={
+                  selectedItems.length === cartItems.length
+                    ? "checkbox"
+                    : "square-outline"
+                }
+                size={24}
+                color={theme.primary}
+              />
+              <Text style={[styles.selectAllText, { color: theme.text }]}>
+                {t("selectAll")} ({selectedItems.length}/{cartItems.length})
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {isEmpty ? (
-          <View style={styles.emptyWrap}>
-            <View style={styles.emptyIconCircle}>
-              <Ionicons name="cart-outline" size={60} color="#C06000" />
+          <View
+            style={[styles.emptyWrap, { backgroundColor: theme.background }]}
+          >
+            <View
+              style={[
+                styles.emptyIconCircle,
+                { backgroundColor: theme.lightBg },
+              ]}
+            >
+              <Ionicons name="cart-outline" size={60} color={theme.primary} />
             </View>
-            <Text style={styles.emptyTitle}>Giỏ hàng trống</Text>
-            <Text style={styles.emptySubtitle}>
-              Hãy thêm vài chiếc bánh ngon vào giỏ nhé 🍰
+            <Text style={[styles.emptyTitle, { color: theme.primary }]}>
+              {t("emptyCart")}
+            </Text>
+            <Text style={[styles.emptySubtitle, { color: theme.text }]}>
+              {t("emptyCartSubtitle")}
             </Text>
             <TouchableOpacity
-              style={styles.emptyButton}
+              style={[styles.emptyButton, { backgroundColor: theme.primary }]}
               onPress={() => navigation.navigate("Home")}
             >
-              <Text style={styles.emptyButtonText}>Tiếp tục mua sắm</Text>
+              <Text style={styles.emptyButtonText}>
+                {t("continueShopping")}
+              </Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -201,29 +277,58 @@ export default function CartScreen() {
               keyExtractor={(item) => item.id}
               contentContainerStyle={{ paddingBottom: 120 }}
               renderItem={({ item }) => (
-                <View style={styles.itemCard}>
+                <View
+                  style={[
+                    styles.itemCard,
+                    {
+                      borderColor: theme.lightBg,
+                      backgroundColor: theme.background,
+                    },
+                  ]}
+                >
+                  <TouchableOpacity
+                    onPress={() => toggleSelectItem(item.id)}
+                    style={styles.checkbox}
+                  >
+                    <Ionicons
+                      name={
+                        selectedItems.includes(item.id)
+                          ? "checkbox"
+                          : "square-outline"
+                      }
+                      size={24}
+                      color={theme.primary}
+                    />
+                  </TouchableOpacity>
                   <Image
                     source={{
-                      uri:
-                        item.imageUrl || "https://via.placeholder.com/100",
+                      uri: item.imageUrl || "https://via.placeholder.com/100",
                     }}
                     style={styles.itemImage}
                   />
 
                   <View style={styles.itemInfo}>
-                    <Text style={styles.itemName} numberOfLines={1}>
+                    <Text
+                      style={[styles.itemName, { color: theme.text }]}
+                      numberOfLines={1}
+                    >
                       {item.name}
                     </Text>
-                    <Text style={styles.itemPrice}>
+                    <Text style={[styles.itemPrice, { color: theme.primary }]}>
                       {parseInt(item.price).toLocaleString()}đ
                     </Text>
                     {item.stock === 0 ? (
-                      <Text style={styles.outOfStockText}>Hết hàng</Text>
+                      <Text
+                        style={[styles.outOfStockText, { color: "#F44336" }]}
+                      >
+                        {t("outOfStock")}
+                      </Text>
                     ) : (
                       <View style={styles.qtyRow}>
                         <TouchableOpacity
                           style={[
                             styles.qtyBtn,
+                            { backgroundColor: theme.primary },
                             item.quantity <= 1 && styles.qtyBtnDisabled,
                           ]}
                           onPress={() => updateQuantity(item, -1)}
@@ -232,12 +337,16 @@ export default function CartScreen() {
                           <Text style={styles.qtyBtnText}>−</Text>
                         </TouchableOpacity>
 
-                        <Text style={styles.qtyNumber}>{item.quantity}</Text>
+                        <Text style={[styles.qtyNumber, { color: theme.text }]}>
+                          {item.quantity}
+                        </Text>
 
                         <TouchableOpacity
                           style={[
                             styles.qtyBtn,
-                            item.quantity >= item.stock && styles.qtyBtnDisabled,
+                            { backgroundColor: theme.primary },
+                            item.quantity >= item.stock &&
+                              styles.qtyBtnDisabled,
                           ]}
                           onPress={() => updateQuantity(item, +1)}
                           disabled={item.quantity >= item.stock}
@@ -252,24 +361,50 @@ export default function CartScreen() {
                     style={styles.deleteBtn}
                     onPress={() => removeItem(item)}
                   >
-                    <Ionicons name="trash-outline" size={22} color="#E74C3C" />
+                    <Ionicons name="trash-outline" size={22} color="#F44336" />
                   </TouchableOpacity>
                 </View>
               )}
             />
 
             {/* FOOTER TỔNG TIỀN */}
-            <View style={styles.footer}>
+            <View
+              style={[
+                styles.footer,
+                {
+                  backgroundColor: theme.background,
+                  borderTopColor: theme.lightBg,
+                },
+              ]}
+            >
               <View style={styles.footerRow}>
                 <View>
-                  <Text style={styles.footerLabel}>Tổng cộng</Text>
-                  <Text style={styles.footerTotal}>
+                  <Text style={[styles.footerLabel, { color: theme.text }]}>
+                    {t("totalAmount")}
+                  </Text>
+                  <Text style={[styles.footerTotal, { color: theme.primary }]}>
                     {total.toLocaleString()}đ
                   </Text>
                 </View>
                 <TouchableOpacity
-                  style={styles.checkoutBtn}
-                  onPress={() => navigation.navigate("Checkout")}
+                  style={[
+                    styles.checkoutBtn,
+                    { backgroundColor: theme.primary },
+                    selectedItems.length === 0 && styles.checkoutBtnDisabled,
+                  ]}
+                  onPress={() => {
+                    if (selectedItems.length === 0) {
+                      Alert.alert(t("notification"), t("pleaseSelectProducts"));
+                      return;
+                    }
+                    const selectedProducts = cartItems.filter((item) =>
+                      selectedItems.includes(item.id)
+                    );
+                    navigation.navigate("Checkout", {
+                      selectedItems: selectedProducts,
+                    });
+                  }}
+                  disabled={selectedItems.length === 0}
                 >
                   <Ionicons
                     name="bag-check-outline"
@@ -277,7 +412,7 @@ export default function CartScreen() {
                     color="#fff"
                     style={{ marginRight: 6 }}
                   />
-                  <Text style={styles.checkoutText}>Đặt hàng ngay</Text>
+                  <Text style={styles.checkoutText}>{t("orderNow")}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -289,7 +424,7 @@ export default function CartScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#FFF5E6" },
+  safeArea: { flex: 1 },
   container: {
     flex: 1,
     paddingHorizontal: 16,
@@ -308,21 +443,18 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 22,
     fontWeight: "bold",
-    color: "#924900",
   },
   headerSubtitle: {
     fontSize: 13,
-    color: "#8C7A5A",
     marginTop: 3,
   },
   headerIconCircle: {
     width: 46,
     height: 46,
     borderRadius: 23,
-    backgroundColor: "#C06000",
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#924900",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.25,
     shadowRadius: 6,
@@ -340,11 +472,10 @@ const styles = StyleSheet.create({
     width: 110,
     height: 110,
     borderRadius: 55,
-    backgroundColor: "#FFF",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 18,
-    shadowColor: "#924900",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 8,
@@ -353,12 +484,10 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 22,
     fontWeight: "bold",
-    color: "#924900",
     marginBottom: 6,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: "#7A6A50",
     textAlign: "center",
     marginBottom: 18,
   },
@@ -366,10 +495,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 14,
-    backgroundColor: "#C06000",
   },
   emptyButtonText: {
-    color: "#fff",
+    color: "#FFF",
     fontWeight: "700",
     fontSize: 15,
   },
@@ -378,7 +506,6 @@ const styles = StyleSheet.create({
   itemCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFF",
     borderRadius: 16,
     marginBottom: 12,
     padding: 12,
@@ -388,19 +515,16 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
     borderWidth: 1,
-    borderColor: "#F1D9BD",
   },
   itemImage: { width: 78, height: 78, borderRadius: 12, marginRight: 12 },
   itemInfo: { flex: 1, justifyContent: "space-between" },
-  itemName: { fontWeight: "700", fontSize: 16, color: "#3E2B1C" },
+  itemName: { fontWeight: "700", fontSize: 16 },
   itemPrice: {
-    color: "#C06000",
     fontWeight: "700",
     marginTop: 4,
     fontSize: 15,
   },
   outOfStockText: {
-    color: "#E74C3C",
     fontSize: 13,
     marginTop: 6,
     fontWeight: "600",
@@ -411,7 +535,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   qtyBtn: {
-    backgroundColor: "#C06000",
     width: 30,
     height: 30,
     borderRadius: 8,
@@ -419,14 +542,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   qtyBtnDisabled: {
-    backgroundColor: "#E5C9A4",
+    opacity: 0.5,
   },
-  qtyBtnText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
+  qtyBtnText: { color: "#FFF", fontSize: 18, fontWeight: "bold" },
   qtyNumber: {
     marginHorizontal: 10,
     fontSize: 16,
     fontWeight: "700",
-    color: "#3E2B1C",
   },
   deleteBtn: { paddingHorizontal: 4 },
 
@@ -439,9 +561,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 16,
     paddingTop: 10,
-    backgroundColor: "#FFF5E6",
     borderTopWidth: 1,
-    borderTopColor: "#E6CDA9",
   },
   footerRow: {
     flexDirection: "row",
@@ -450,25 +570,48 @@ const styles = StyleSheet.create({
   },
   footerLabel: {
     fontSize: 13,
-    color: "#8C7A5A",
     marginBottom: 2,
   },
   footerTotal: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#924900",
   },
   checkoutBtn: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#C06000",
     paddingHorizontal: 18,
     paddingVertical: 10,
     borderRadius: 14,
   },
+  checkoutBtnDisabled: {
+    opacity: 0.4,
+  },
   checkoutText: {
-    color: "#fff",
+    color: "#FFF",
     fontSize: 15,
     fontWeight: "700",
+  },
+
+  /* Select All */
+  selectAllContainer: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  selectAllButton: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  selectAllText: {
+    fontSize: 15,
+    fontWeight: "600",
+    marginLeft: 10,
+  },
+
+  /* Checkbox */
+  checkbox: {
+    marginRight: 10,
+    padding: 4,
   },
 });

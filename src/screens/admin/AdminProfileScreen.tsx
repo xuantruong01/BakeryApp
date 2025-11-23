@@ -12,8 +12,10 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
+import { useApp } from "../../contexts/AppContext";
 
 const AdminProfileScreen = () => {
+  const { theme, t } = useApp();
   const navigation = useNavigation();
   const [adminEmail, setAdminEmail] = useState("");
 
@@ -34,32 +36,28 @@ const AdminProfileScreen = () => {
   };
 
   const handleLogout = () => {
-    Alert.alert(
-      "Đăng xuất",
-      "Bạn có chắc muốn đăng xuất khỏi tài khoản admin?",
-      [
-        { text: "Hủy", style: "cancel" },
-        {
-          text: "Đăng xuất",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await AsyncStorage.removeItem("user");
-              await AsyncStorage.removeItem("userRole");
+    Alert.alert(t("logout"), t("confirmLogout"), [
+      { text: t("cancel"), style: "cancel" },
+      {
+        text: t("logout"),
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await AsyncStorage.removeItem("user");
+            await AsyncStorage.removeItem("userRole");
 
-              // Reset navigation về màn hình đăng nhập
-              (navigation as any).reset({
-                index: 0,
-                routes: [{ name: "Login" }],
-              });
-            } catch (error) {
-              console.error("Error logging out:", error);
-              Alert.alert("Lỗi", "Không thể đăng xuất. Vui lòng thử lại.");
-            }
-          },
+            // Reset navigation về màn hình đăng nhập
+            (navigation as any).reset({
+              index: 0,
+              routes: [{ name: "Login" }],
+            });
+          } catch (error) {
+            console.error("Error logging out:", error);
+            Alert.alert(t("error"), t("cannotLogout"));
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const MenuButton = ({
@@ -82,27 +80,33 @@ const AdminProfileScreen = () => {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: theme.primary }]}
+      edges={["top"]}
+    >
       <ScrollView style={styles.container}>
-        <LinearGradient colors={["#FF6B6B", "#FF8E53"]} style={styles.header}>
+        <LinearGradient
+          colors={[theme.primary, theme.secondary]}
+          style={styles.header}
+        >
           <View style={styles.avatarContainer}>
             <View style={styles.avatar}>
               <Ionicons name="person" size={40} color="#FFF" />
             </View>
           </View>
-          <Text style={styles.headerName}>Admin</Text>
+          <Text style={styles.headerName}>{t("admin")}</Text>
           <Text style={styles.headerEmail}>{adminEmail}</Text>
         </LinearGradient>
 
         <View style={styles.content}>
           {/* Thông tin tài khoản */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Thông tin cá nhân</Text>
+            <Text style={styles.sectionTitle}>{t("personalInfo")}</Text>
             <View style={styles.infoCard}>
               <View style={styles.infoRow}>
                 <Ionicons name="mail" size={20} color="#666" />
                 <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Email</Text>
+                  <Text style={styles.infoLabel}>{t("email")}</Text>
                   <Text style={styles.infoValue}>{adminEmail}</Text>
                 </View>
               </View>
@@ -110,8 +114,8 @@ const AdminProfileScreen = () => {
               <View style={styles.infoRow}>
                 <Ionicons name="shield-checkmark" size={20} color="#666" />
                 <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Vai trò</Text>
-                  <Text style={styles.infoValue}>Quản trị viên</Text>
+                  <Text style={styles.infoLabel}>{t("role")}</Text>
+                  <Text style={styles.infoValue}>{t("administrator")}</Text>
                 </View>
               </View>
             </View>
@@ -119,18 +123,18 @@ const AdminProfileScreen = () => {
 
           {/* Quản lý */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Quản Lý</Text>
+            <Text style={styles.sectionTitle}>{t("management")}</Text>
             <MenuButton
               icon="notifications"
-              title="Thông báo"
-              subtitle="Xem đơn hàng chờ xác nhận"
+              title={t("notifications")}
+              subtitle={t("viewPendingOrders")}
               color="#FFA500"
               onPress={() => (navigation as any).navigate("AdminNotifications")}
             />
             <MenuButton
               icon="settings"
-              title="Cài đặt hệ thống"
-              subtitle="Cấu hình ứng dụng"
+              title={t("systemSettings")}
+              subtitle={t("configureApp")}
               color="#17A2B8"
               onPress={() => (navigation as any).navigate("AdminSettings")}
             />
@@ -138,32 +142,37 @@ const AdminProfileScreen = () => {
 
           {/* Hỗ trợ */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Hỗ Trợ</Text>
+            <Text style={styles.sectionTitle}>{t("support")}</Text>
             <MenuButton
               icon="help-circle"
-              title="Trợ giúp"
-              subtitle="Hướng dẫn sử dụng"
+              title={t("help")}
+              subtitle={t("userGuide")}
               color="#28A745"
               onPress={() => (navigation as any).navigate("AdminHelp")}
             />
             <MenuButton
               icon="information-circle"
-              title="Về ứng dụng"
-              subtitle="Phiên bản 2.0.0"
+              title={t("aboutApp")}
+              subtitle={t("version") + " 2.0.0"}
               color="#6C757D"
               onPress={() =>
                 Alert.alert(
-                  "Về BakeryApp Admin",
-                  "Phiên bản: 2.0.0\nCopyright © 2025\n\nỨng dụng quản lý cửa hàng bánh"
+                  t("aboutBakeryApp"),
+                  `${t("version")}: 2.0.0\nCopyright © 2025\n\n${t(
+                    "bakeryManagementApp"
+                  )}`
                 )
               }
             />
           </View>
 
           {/* Nút đăng xuất */}
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <TouchableOpacity
+            style={[styles.logoutButton, { backgroundColor: theme.primary }]}
+            onPress={handleLogout}
+          >
             <Ionicons name="log-out" size={24} color="#FFF" />
-            <Text style={styles.logoutText}>Đăng Xuất</Text>
+            <Text style={styles.logoutText}>{t("logout")}</Text>
           </TouchableOpacity>
 
           <Text style={styles.version}>BakeryApp Admin v2.0.0</Text>
@@ -176,7 +185,6 @@ const AdminProfileScreen = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#FF6B6B",
   },
   container: {
     flex: 1,

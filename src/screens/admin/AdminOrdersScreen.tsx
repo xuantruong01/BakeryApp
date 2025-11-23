@@ -10,6 +10,8 @@ import {
   Alert,
   Image,
   ScrollView,
+  TextInput,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -22,8 +24,10 @@ import {
   orderBy,
 } from "firebase/firestore";
 import { db } from "../../services/firebaseConfig";
+import { useApp } from "../../contexts/AppContext";
 
 const AdminOrdersScreen = ({ navigation, route }) => {
+  const { theme, t } = useApp();
   const [orders, setOrders] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,14 +35,24 @@ const AdminOrdersScreen = ({ navigation, route }) => {
   const [selectedFilter, setSelectedFilter] = useState(
     route?.params?.filter || "all"
   );
+  const [searchQuery, setSearchQuery] = useState("");
+  const [imageModalVisible, setImageModalVisible] = useState(false);
+  const [selectedImage, setSelectedImage] = useState("");
 
   useEffect(() => {
     fetchOrders();
   }, []);
 
   useEffect(() => {
+    // Cập nhật filter khi route params thay đổi
+    if (route?.params?.filter) {
+      setSelectedFilter(route.params.filter);
+    }
+  }, [route?.params?.filter]);
+
+  useEffect(() => {
     filterOrders();
-  }, [selectedFilter, orders]);
+  }, [selectedFilter, orders, searchQuery]);
 
   const fetchOrders = async () => {
     try {
@@ -55,7 +69,7 @@ const AdminOrdersScreen = ({ navigation, route }) => {
       setOrders(ordersData);
     } catch (error) {
       console.error("Error fetching orders:", error);
-      Alert.alert("Lỗi", "Không thể tải danh sách đơn hàng");
+      Alert.alert(t("error"), t("cannotLoadOrders"));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -63,13 +77,21 @@ const AdminOrdersScreen = ({ navigation, route }) => {
   };
 
   const filterOrders = () => {
-    if (selectedFilter === "all") {
-      setFilteredOrders(orders);
-    } else {
-      setFilteredOrders(
-        orders.filter((order) => order.status === selectedFilter)
+    let filtered = orders;
+
+    // Filter by status
+    if (selectedFilter !== "all") {
+      filtered = filtered.filter((order) => order.status === selectedFilter);
+    }
+
+    // Filter by phone number
+    if (searchQuery.trim()) {
+      filtered = filtered.filter((order) =>
+        order.customerPhone?.includes(searchQuery.trim())
       );
     }
+
+    setFilteredOrders(filtered);
   };
 
   const onRefresh = () => {
@@ -91,43 +113,35 @@ const AdminOrdersScreen = ({ navigation, route }) => {
       fetchOrders();
     } catch (error) {
       console.error("Error updating order status:", error);
-      Alert.alert("Lỗi", "Không thể cập nhật trạng thái đơn hàng");
+      Alert.alert(t("error"), t("cannotUpdateOrderStatus"));
     }
   };
 
   const confirmOrder = (orderId) => {
-    Alert.alert(
-      "Xác nhận đơn hàng",
-      "Bạn có chắc muốn xác nhận đơn hàng này?",
-      [
-        { text: "Hủy", style: "cancel" },
-        {
-          text: "Xác nhận",
-          onPress: () => updateOrderStatus(orderId, "processing"),
-        },
-      ]
-    );
+    Alert.alert(t("confirmOrder"), t("confirmOrderMessage"), [
+      { text: t("cancel"), style: "cancel" },
+      {
+        text: t("confirmOrder"),
+        onPress: () => updateOrderStatus(orderId, "processing"),
+      },
+    ]);
   };
 
   const completeOrder = (orderId) => {
-    Alert.alert(
-      "Hoàn thành đơn hàng",
-      "Xác nhận đơn hàng đã được giao thành công?",
-      [
-        { text: "Hủy", style: "cancel" },
-        {
-          text: "Hoàn thành",
-          onPress: () => updateOrderStatus(orderId, "completed"),
-        },
-      ]
-    );
+    Alert.alert(t("completeOrder"), t("completeOrderMessage"), [
+      { text: t("cancel"), style: "cancel" },
+      {
+        text: t("completeOrder"),
+        onPress: () => updateOrderStatus(orderId, "completed"),
+      },
+    ]);
   };
 
   const cancelOrder = (orderId) => {
-    Alert.alert("Hủy đơn hàng", "Bạn có chắc muốn hủy đơn hàng này?", [
-      { text: "Không", style: "cancel" },
+    Alert.alert(t("cancelOrder"), t("cancelOrderMessage"), [
+      { text: t("no"), style: "cancel" },
       {
-        text: "Hủy đơn",
+        text: t("cancelOrder"),
         style: "destructive",
         onPress: () => updateOrderStatus(orderId, "cancelled"),
       },
@@ -135,18 +149,7 @@ const AdminOrdersScreen = ({ navigation, route }) => {
   };
 
   const getStatusText = (status) => {
-    switch (status) {
-      case "pending":
-        return "Chờ xác nhận";
-      case "processing":
-        return "Đang xử lý";
-      case "completed":
-        return "Hoàn thành";
-      case "cancelled":
-        return "Đã hủy";
-      default:
-        return status;
-    }
+    return t(status) || status;
   };
 
   const getStatusColor = (status) => {
@@ -175,7 +178,7 @@ const AdminOrdersScreen = ({ navigation, route }) => {
       case "cancelled":
         return "#DC3545";
       default:
-        return "#E58E26";
+        return theme.primary;
     }
   };
 
@@ -243,7 +246,7 @@ const AdminOrdersScreen = ({ navigation, route }) => {
           {item.total?.toLocaleString("vi-VN")}đ
         </Text>
       </View>
-      {item.paymentProof && (
+      {item.paymentProofBase64 && (
         <View style={{ alignItems: "center", marginBottom: 10 }}>
           <Text
             style={{
@@ -253,23 +256,37 @@ const AdminOrdersScreen = ({ navigation, route }) => {
               color: "#E58E26",
             }}
           >
-            Ảnh xác nhận chuyển khoản:
+            {t("paymentProof")}:
           </Text>
-          <Image
-            source={{
-              uri: item.paymentProof.startsWith("data:")
-                ? item.paymentProof
-                : `data:image/jpeg;base64,${item.paymentProof}`,
+          <TouchableOpacity
+            onPress={() => {
+              const imageUri = item.paymentProofBase64.startsWith("data:")
+                ? item.paymentProofBase64
+                : `data:image/jpeg;base64,${item.paymentProofBase64}`;
+              console.log("Opening image:", imageUri.substring(0, 50));
+              setSelectedImage(imageUri);
+              setImageModalVisible(true);
             }}
-            style={{
-              width: 120,
-              height: 120,
-              borderRadius: 10,
-              borderWidth: 1,
-              borderColor: "#E58E26",
-            }}
-            resizeMode="cover"
-          />
+          >
+            <Image
+              source={{
+                uri: item.paymentProofBase64.startsWith("data:")
+                  ? item.paymentProofBase64
+                  : `data:image/jpeg;base64,${item.paymentProofBase64}`,
+              }}
+              style={{
+                width: 120,
+                height: 120,
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: "#E58E26",
+              }}
+              resizeMode="cover"
+              onError={(e) =>
+                console.log("Image load error:", e.nativeEvent.error)
+              }
+            />
+          </TouchableOpacity>
         </View>
       )}
       <View style={styles.orderActions}>
@@ -280,14 +297,14 @@ const AdminOrdersScreen = ({ navigation, route }) => {
               onPress={() => confirmOrder(item.id)}
             >
               <Ionicons name="checkmark-circle" size={20} color="#FFF" />
-              <Text style={styles.actionButtonText}>Xác nhận</Text>
+              <Text style={styles.actionButtonText}>{t("confirmOrder")}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.actionButton, styles.cancelButton]}
               onPress={() => cancelOrder(item.id)}
             >
               <Ionicons name="close-circle" size={20} color="#FFF" />
-              <Text style={styles.actionButtonText}>Hủy</Text>
+              <Text style={styles.actionButtonText}>{t("cancel")}</Text>
             </TouchableOpacity>
           </>
         )}
@@ -297,14 +314,14 @@ const AdminOrdersScreen = ({ navigation, route }) => {
             onPress={() => completeOrder(item.id)}
           >
             <Ionicons name="checkmark-done-circle" size={20} color="#FFF" />
-            <Text style={styles.actionButtonText}>Hoàn thành</Text>
+            <Text style={styles.actionButtonText}>{t("completeOrder")}</Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity
           style={[
             styles.actionButton,
             {
-              backgroundColor: getStatusColor(item.status),
+              backgroundColor: theme.secondary,
             },
           ]}
           onPress={() =>
@@ -312,7 +329,7 @@ const AdminOrdersScreen = ({ navigation, route }) => {
           }
         >
           <Ionicons name="eye" size={20} color="#FFF" />
-          <Text style={styles.actionButtonText}>Chi tiết</Text>
+          <Text style={styles.actionButtonText}>{t("detail")}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -320,11 +337,13 @@ const AdminOrdersScreen = ({ navigation, route }) => {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView
+        style={[styles.safeArea, { backgroundColor: theme.primary }]}
+      >
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#E58E26" />
+          <ActivityIndicator size="large" color={theme.primary} />
           <Text style={{ marginTop: 12, fontSize: 16, color: "#666" }}>
-            Đang tải đơn hàng...
+            {t("loadingOrders")}
           </Text>
         </View>
       </SafeAreaView>
@@ -332,11 +351,34 @@ const AdminOrdersScreen = ({ navigation, route }) => {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: theme.primary }]}
+      edges={["top"]}
+    >
       <View style={styles.container}>
         {/* HEADER */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>📦 Quản Lý Đơn Hàng</Text>
+        <View style={[styles.header, { backgroundColor: theme.primary }]}>
+          <Text style={styles.headerTitle}>📦 {t("orderManagement")}</Text>
+        </View>
+
+        {/* SEARCH */}
+        <View style={styles.searchContainer}>
+          <View style={styles.searchBox}>
+            <Ionicons name="search" size={20} color="#999" />
+            <TextInput
+              style={styles.searchInput}
+              placeholder={t("searchByPhone")}
+              placeholderTextColor="#999"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              keyboardType="phone-pad"
+            />
+            {searchQuery !== "" && (
+              <TouchableOpacity onPress={() => setSearchQuery("")}>
+                <Ionicons name="close-circle" size={20} color="#999" />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         {/* FILTER */}
@@ -349,24 +391,24 @@ const AdminOrdersScreen = ({ navigation, route }) => {
             alwaysBounceVertical={false} // Không cho bounce theo trục dọc
             bounces={false}
           >
-            <FilterButton label="Tất cả" value="all" count={orders.length} />
+            <FilterButton label={t("all")} value="all" count={orders.length} />
             <FilterButton
-              label="Chờ xác nhận"
+              label={t("pending")}
               value="pending"
               count={orders.filter((o) => o.status === "pending").length}
             />
             <FilterButton
-              label="Đang xử lý"
+              label={t("processing")}
               value="processing"
               count={orders.filter((o) => o.status === "processing").length}
             />
             <FilterButton
-              label="Hoàn thành"
+              label={t("completed")}
               value="completed"
               count={orders.filter((o) => o.status === "completed").length}
             />
             <FilterButton
-              label="Đã hủy"
+              label={t("cancelled")}
               value="cancelled"
               count={orders.filter((o) => o.status === "cancelled").length}
             />
@@ -385,11 +427,39 @@ const AdminOrdersScreen = ({ navigation, route }) => {
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Ionicons name="cart-outline" size={64} color="#CCC" />
-              <Text style={styles.emptyText}>Không có đơn hàng nào</Text>
+              <Text style={styles.emptyText}>{t("noOrders")}</Text>
             </View>
           }
         />
       </View>
+
+      {/* Image Modal */}
+      <Modal
+        visible={imageModalVisible}
+        transparent={true}
+        onRequestClose={() => setImageModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalContainer}
+          activeOpacity={1}
+          onPress={() => setImageModalVisible(false)}
+        >
+          <TouchableOpacity
+            style={styles.modalCloseButton}
+            onPress={() => setImageModalVisible(false)}
+          >
+            <Ionicons name="close-circle" size={40} color="#FFF" />
+          </TouchableOpacity>
+          <Image
+            source={{ uri: selectedImage }}
+            style={styles.modalImage}
+            resizeMode="contain"
+            onError={(e) =>
+              console.log("Modal image error:", e.nativeEvent.error)
+            }
+          />
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -397,7 +467,6 @@ const AdminOrdersScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
   },
   container: {
     flex: 1,
@@ -412,7 +481,6 @@ const styles = StyleSheet.create({
 
   /* HEADER */
   header: {
-    backgroundColor: "#E58E26",
     padding: 16,
     paddingBottom: 12,
     flexDirection: "row",
@@ -425,6 +493,29 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     color: "#FFF",
+  },
+
+  /* SEARCH */
+  searchContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: "#FFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E0E0E0",
+  },
+  searchBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F5F5F5",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 8,
+    fontSize: 14,
+    color: "#333",
   },
 
   /* FILTER */
@@ -612,6 +703,24 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     color: "#999",
+  },
+
+  /* MODAL */
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalCloseButton: {
+    position: "absolute",
+    top: 50,
+    right: 20,
+    zIndex: 1,
+  },
+  modalImage: {
+    width: "90%",
+    height: "80%",
   },
 });
 

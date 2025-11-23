@@ -28,8 +28,10 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 import { db } from "../../services/firebaseConfig";
+import { useApp } from "../../contexts/AppContext";
 
 const AdminProductsScreen = ({ navigation }) => {
+  const { theme, t } = useApp();
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -101,7 +103,7 @@ const AdminProductsScreen = ({ navigation }) => {
       setCategories(categoriesData);
     } catch (error) {
       console.error("Error fetching data:", error);
-      Alert.alert("Lỗi", "Không thể tải danh sách sản phẩm");
+      Alert.alert(t("error"), t("cannotLoadProducts"));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -143,7 +145,7 @@ const AdminProductsScreen = ({ navigation }) => {
     dismissKeyboard();
     try {
       if (!formData.name || !formData.price || !formData.categoryId) {
-        Alert.alert("Lỗi", "Vui lòng điền đầy đủ thông tin bắt buộc");
+        Alert.alert(t("error"), t("fillRequiredFields"));
         return;
       }
       const productData = {
@@ -158,39 +160,39 @@ const AdminProductsScreen = ({ navigation }) => {
       if (editingProduct) {
         const productRef = doc(db, "products", editingProduct.id);
         await updateDoc(productRef, productData);
-        Alert.alert("Thành công", "Đã cập nhật sản phẩm");
+        Alert.alert(t("success"), t("productUpdated"));
       } else {
         await addDoc(collection(db, "products"), {
           ...productData,
           createdAt: new Date(),
         });
-        Alert.alert("Thành công", "Đã thêm sản phẩm mới");
+        Alert.alert(t("success"), t("productAdded"));
       }
       setModalVisible(false);
       fetchData();
     } catch (error) {
       console.error("Error saving product:", error);
-      Alert.alert("Lỗi", "Không thể lưu sản phẩm");
+      Alert.alert(t("error"), t("cannotSaveProduct"));
     }
   };
 
   const handleDeleteProduct = (productId, productName) => {
     Alert.alert(
-      "Xóa sản phẩm",
-      `Bạn có chắc muốn xóa sản phẩm "${productName}"?`,
+      t("deleteProduct"),
+      `${t("confirmDeleteProduct")} "${productName}"?`,
       [
-        { text: "Hủy", style: "cancel" },
+        { text: t("cancel"), style: "cancel" },
         {
-          text: "Xóa",
+          text: t("delete"),
           style: "destructive",
           onPress: async () => {
             try {
               await deleteDoc(doc(db, "products", productId));
-              Alert.alert("Thành công", "Đã xóa sản phẩm");
+              Alert.alert(t("success"), t("productDeleted"));
               fetchData();
             } catch (error) {
               console.error("Error deleting product:", error);
-              Alert.alert("Lỗi", "Không thể xóa sản phẩm");
+              Alert.alert(t("error"), t("cannotDeleteProduct"));
             }
           },
         },
@@ -232,7 +234,9 @@ const AdminProductsScreen = ({ navigation }) => {
         <Text style={styles.productPrice}>
           {item.price?.toLocaleString("vi-VN")}đ
         </Text>
-        <Text style={styles.productStock}>Tồn kho: {item.stock || 0}</Text>
+        <Text style={styles.productStock}>
+          {t("stock")}: {item.stock || 0}
+        </Text>
       </View>
       <View style={styles.productActions}>
         <TouchableOpacity
@@ -255,9 +259,9 @@ const AdminProductsScreen = ({ navigation }) => {
     return (
       <SafeAreaView style={styles.safeArea} edges={["top"]}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#FF6B6B" />
+          <ActivityIndicator size="large" color={theme.primary} />
           <Text style={{ marginTop: 12, fontSize: 16, color: "#666" }}>
-            Đang tải sản phẩm...
+            {t("loadingProducts")}
           </Text>
         </View>
       </SafeAreaView>
@@ -265,11 +269,14 @@ const AdminProductsScreen = ({ navigation }) => {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: theme.primary }]}
+      edges={["top"]}
+    >
       <View style={styles.container}>
         {/* HEADER */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>🍞 Quản Lý Sản Phẩm</Text>
+        <View style={[styles.header, { backgroundColor: theme.primary }]}>
+          <Text style={styles.headerTitle}>🍞 {t("productManagement")}</Text>
           <TouchableOpacity
             style={styles.addButtonHeader}
             onPress={openAddModal}
@@ -294,7 +301,7 @@ const AdminProductsScreen = ({ navigation }) => {
             <TextInput
               ref={searchRef}
               style={styles.searchInput}
-              placeholder="Tìm kiếm sản phẩm..."
+              placeholder={t("searchProducts")}
               placeholderTextColor="#999"
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -409,8 +416,8 @@ const AdminProductsScreen = ({ navigation }) => {
               <Ionicons name="cube-outline" size={64} color="#CCC" />
               <Text style={styles.emptyText}>
                 {searchQuery || selectedCategory !== "all"
-                  ? "Không tìm thấy sản phẩm"
-                  : "Chưa có sản phẩm nào"}
+                  ? t("noProductsFound")
+                  : t("noProducts")}
               </Text>
             </View>
           }
@@ -433,7 +440,9 @@ const AdminProductsScreen = ({ navigation }) => {
                   {/* HEADER */}
                   <View style={styles.modalHeader}>
                     <Text style={styles.modalTitle}>
-                      {editingProduct ? "✏️ Sửa Sản Phẩm" : "➕ Thêm Sản Phẩm"}
+                      {editingProduct
+                        ? `✏️ ${t("editProduct")}`
+                        : `➕ ${t("addProduct")}`}
                     </Text>
                     <TouchableOpacity
                       style={styles.closeButton}
@@ -453,14 +462,14 @@ const AdminProductsScreen = ({ navigation }) => {
                   >
                     <View style={styles.formContainer}>
                       {/* Tên sản phẩm */}
-                      <Text style={styles.label}>Tên Sản Phẩm *</Text>
+                      <Text style={styles.label}>{t("productName")} *</Text>
                       <TextInput
                         ref={nameRef}
                         style={[
                           styles.input,
                           focusedInput === "name" && styles.inputFocused,
                         ]}
-                        placeholder="Nhập tên sản phẩm"
+                        placeholder={t("enterProductName")}
                         placeholderTextColor="#999"
                         value={formData.name}
                         onChangeText={(text) =>
@@ -471,14 +480,14 @@ const AdminProductsScreen = ({ navigation }) => {
                       />
 
                       {/* Giá */}
-                      <Text style={styles.label}>Giá (đ) *</Text>
+                      <Text style={styles.label}>{t("price")} (đ) *</Text>
                       <TextInput
                         ref={priceRef}
                         style={[
                           styles.input,
                           focusedInput === "price" && styles.inputFocused,
                         ]}
-                        placeholder="Nhập giá sản phẩm"
+                        placeholder={t("enterPrice")}
                         placeholderTextColor="#999"
                         keyboardType="decimal-pad"
                         value={formData.price}
@@ -490,7 +499,7 @@ const AdminProductsScreen = ({ navigation }) => {
                       />
 
                       {/* Mô tả */}
-                      <Text style={styles.label}>Mô Tả</Text>
+                      <Text style={styles.label}>{t("description")}</Text>
                       <TextInput
                         ref={descRef}
                         style={[
@@ -498,7 +507,7 @@ const AdminProductsScreen = ({ navigation }) => {
                           styles.textArea,
                           focusedInput === "description" && styles.inputFocused,
                         ]}
-                        placeholder="Nhập mô tả sản phẩm"
+                        placeholder={t("enterDescription")}
                         placeholderTextColor="#999"
                         multiline
                         numberOfLines={4}
@@ -511,7 +520,7 @@ const AdminProductsScreen = ({ navigation }) => {
                       />
 
                       {/* Danh mục */}
-                      <Text style={styles.label}>Danh Mục *</Text>
+                      <Text style={styles.label}>{t("category")} *</Text>
                       <View style={styles.categoryPicker}>
                         {categories.map((cat) => (
                           <TouchableOpacity
@@ -539,7 +548,7 @@ const AdminProductsScreen = ({ navigation }) => {
                       </View>
 
                       {/* URL ảnh */}
-                      <Text style={styles.label}>URL Ảnh Sản Phẩm</Text>
+                      <Text style={styles.label}>{t("imageURL")}</Text>
                       <TextInput
                         ref={imageRef}
                         style={[
@@ -560,7 +569,7 @@ const AdminProductsScreen = ({ navigation }) => {
                       {formData.image && (
                         <View style={styles.imagePreviewContainer}>
                           <Text style={styles.imagePreviewLabel}>
-                            Xem trước:
+                            {t("preview")}:
                           </Text>
                           <Image
                             source={{ uri: formData.image }}
@@ -570,7 +579,7 @@ const AdminProductsScreen = ({ navigation }) => {
                       )}
 
                       {/* Tồn kho */}
-                      <Text style={styles.label}>Tồn Kho</Text>
+                      <Text style={styles.label}>{t("stock")}</Text>
                       <View style={styles.stockInputContainer}>
                         <TouchableOpacity
                           style={styles.stockButton}
@@ -628,13 +637,13 @@ const AdminProductsScreen = ({ navigation }) => {
                         setModalVisible(false);
                       }}
                     >
-                      <Text style={styles.cancelButtonText}>Hủy</Text>
+                      <Text style={styles.cancelButtonText}>{t("cancel")}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[styles.modalButton, styles.saveButton]}
                       onPress={handleSaveProduct}
                     >
-                      <Text style={styles.saveButtonText}>Lưu</Text>
+                      <Text style={styles.saveButtonText}>{t("save")}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -648,7 +657,7 @@ const AdminProductsScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#FF6B6B" },
+  safeArea: { flex: 1 },
   container: { flex: 1, backgroundColor: "#F5F5F5" },
   loadingContainer: {
     flex: 1,
@@ -695,8 +704,7 @@ const styles = StyleSheet.create({
 
   /* HEADER */
   header: {
-    backgroundColor: "#FF6B6B",
-    padding: 20,
+    padding: 16,
     paddingTop: 16,
     flexDirection: "row",
     justifyContent: "space-between",

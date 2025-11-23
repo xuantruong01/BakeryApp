@@ -15,9 +15,11 @@ import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { db } from "../services/firebaseConfig";
 import { doc, getDoc } from "firebase/firestore";
 import { LinearGradient } from "expo-linear-gradient";
+import { useApp } from "../contexts/AppContext";
 
 const AccountScreen = () => {
   const navigation = useNavigation();
+  const { theme, t } = useApp();
   const [user, setUser] = useState<any>(null);
   const [address, setAddress] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -79,17 +81,14 @@ const AccountScreen = () => {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#924900" />
+        <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
   }
 
   // 🧭 Giao diện chính
   return (
-    <LinearGradient
-      colors={["#FFF5E6", "#FFE8CC", "#FFFFFF"]}
-      style={styles.container}
-    >
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -100,38 +99,57 @@ const AccountScreen = () => {
             <View style={styles.header}>
               <View style={styles.avatarContainer}>
                 <LinearGradient
-                  colors={["#C06000", "#924900", "#6B3600"]}
+                  colors={[theme.primary, theme.secondary, theme.accent]}
                   style={styles.avatarGradient}
                 >
                   <Ionicons name="person" size={50} color="#FFF" />
                 </LinearGradient>
               </View>
-              <Text style={styles.username}>
-                {user.fullname || user.displayName || "Người dùng"}
+              <Text style={[styles.username, { color: theme.primary }]}>
+                {user.fullname || user.displayName || t("user")}
               </Text>
-              <Text style={styles.email}>{user.email}</Text>
+              <Text style={[styles.email, { color: theme.text }]}>
+                {user.email}
+              </Text>
             </View>
 
             {/* Thông tin cá nhân */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Ionicons name="information-circle" size={24} color="#924900" />
-                <Text style={styles.sectionTitle}>Thông tin cá nhân</Text>
+                <Ionicons
+                  name="information-circle"
+                  size={24}
+                  color={theme.primary}
+                />
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                  {t("personalInformation")}
+                </Text>
               </View>
-              <View style={styles.infoCard}>
+              <View
+                style={[styles.infoCard, { backgroundColor: theme.lightBg }]}
+              >
                 <View style={styles.infoRow}>
-                  <Ionicons name="mail" size={20} color="#924900" />
-                  <Text style={styles.infoLabel}>Email:</Text>
-                  <Text style={styles.infoValue}>
-                    {user.email || "Chưa có"}
+                  <Ionicons name="mail" size={20} color={theme.primary} />
+                  <Text style={[styles.infoLabel, { color: theme.text }]}>
+                    {t("email")}:
+                  </Text>
+                  <Text style={[styles.infoValue, { color: theme.text }]}>
+                    {user.email || t("notAvailable")}
                   </Text>
                 </View>
-                <View style={styles.infoDivider} />
+                <View
+                  style={[
+                    styles.infoDivider,
+                    { backgroundColor: theme.text + "30" },
+                  ]}
+                />
                 <View style={styles.infoRow}>
-                  <Ionicons name="call" size={20} color="#924900" />
-                  <Text style={styles.infoLabel}>Số điện thoại:</Text>
-                  <Text style={styles.infoValue}>
-                    {user.phoneNumber || "Chưa có"}
+                  <Ionicons name="call" size={20} color={theme.primary} />
+                  <Text style={[styles.infoLabel, { color: theme.text }]}>
+                    {t("phoneNumber")}:
+                  </Text>
+                  <Text style={[styles.infoValue, { color: theme.text }]}>
+                    {user.phoneNumber || t("notAvailable")}
                   </Text>
                 </View>
               </View>
@@ -140,34 +158,56 @@ const AccountScreen = () => {
             {/* Địa chỉ giao hàng */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Ionicons name="location" size={24} color="#924900" />
-                <Text style={styles.sectionTitle}>Địa chỉ giao hàng</Text>
+                <Ionicons name="location" size={24} color={theme.primary} />
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                  {t("deliveryAddress")}
+                </Text>
               </View>
               {!address ? (
                 <TouchableOpacity
-                  style={styles.addAddressCard}
+                  style={[
+                    styles.addAddressCard,
+                    {
+                      backgroundColor: theme.lightBg,
+                      borderColor: theme.text + "30",
+                    },
+                  ]}
                   onPress={() =>
                     (navigation as any).navigate("AddAddress", {
                       userId: user.uid,
                     })
                   }
                 >
-                  <Ionicons name="add-circle" size={40} color="#924900" />
-                  <Text style={styles.addAddressText}>
-                    Thêm địa chỉ giao hàng
+                  <Ionicons name="add-circle" size={40} color={theme.primary} />
+                  <Text
+                    style={[styles.addAddressText, { color: theme.primary }]}
+                  >
+                    {t("addDeliveryAddress")}
                   </Text>
                 </TouchableOpacity>
               ) : (
-                <View style={styles.addressCard}>
+                <View
+                  style={[
+                    styles.addressCard,
+                    { backgroundColor: theme.lightBg },
+                  ]}
+                >
                   <View style={styles.addressInfo}>
-                    <Text style={styles.addressName}>{address.name}</Text>
-                    <Text style={styles.addressDetail}>📞 {address.phone}</Text>
-                    <Text style={styles.addressDetail}>
+                    <Text style={[styles.addressName, { color: theme.text }]}>
+                      {address.name}
+                    </Text>
+                    <Text style={[styles.addressDetail, { color: theme.text }]}>
+                      📞 {address.phone}
+                    </Text>
+                    <Text style={[styles.addressDetail, { color: theme.text }]}>
                       📍 {address.address}
                     </Text>
                   </View>
                   <TouchableOpacity
-                    style={styles.editAddressBtn}
+                    style={[
+                      styles.editAddressBtn,
+                      { backgroundColor: theme.primary },
+                    ]}
                     onPress={() =>
                       (navigation as any).navigate("AddAddress", {
                         userId: user.uid,
@@ -183,8 +223,14 @@ const AccountScreen = () => {
             {/* 📦 Quản lý đơn hàng - 2 nút */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Ionicons name="receipt-outline" size={24} color="#924900" />
-                <Text style={styles.sectionTitle}>Quản lý đơn hàng</Text>
+                <Ionicons
+                  name="receipt-outline"
+                  size={24}
+                  color={theme.primary}
+                />
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                  {t("manageOrders")}
+                </Text>
               </View>
 
               <View style={styles.orderButtonsContainer}>
@@ -194,14 +240,16 @@ const AccountScreen = () => {
                   onPress={() => (navigation as any).navigate("Orders")}
                 >
                   <LinearGradient
-                    colors={["#FFA500", "#FF8C00", "#FF7F00"]}
+                    colors={[theme.primary, theme.accent]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
-                    style={styles.orderButtonGradient}
+                    style={[styles.orderButtonGradient, { opacity: 1 }]}
                   >
                     <Ionicons name="cart-outline" size={32} color="#FFF" />
-                    <Text style={styles.orderButtonText}>Đơn hàng</Text>
-                    <Text style={styles.orderButtonSubtext}>Đang xử lý</Text>
+                    <Text style={styles.orderButtonText}>{t("orders")}</Text>
+                    <Text style={styles.orderButtonSubtext}>
+                      {t("orderProcessing")}
+                    </Text>
                   </LinearGradient>
                 </TouchableOpacity>
 
@@ -211,43 +259,67 @@ const AccountScreen = () => {
                   onPress={() => (navigation as any).navigate("OrderHistory")}
                 >
                   <LinearGradient
-                    colors={["#924900", "#6B3600", "#4A2200"]}
+                    colors={[theme.accent, theme.secondary]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
-                    style={styles.orderButtonGradient}
+                    style={[styles.orderButtonGradient, { opacity: 0.85 }]}
                   >
                     <Ionicons name="time-outline" size={32} color="#FFF" />
-                    <Text style={styles.orderButtonText}>Lịch sử</Text>
-                    <Text style={styles.orderButtonSubtext}>Đã mua</Text>
+                    <Text style={styles.orderButtonText}>
+                      {t("orderHistoryTab")}
+                    </Text>
+                    <Text style={styles.orderButtonSubtext}>
+                      {t("purchased")}
+                    </Text>
                   </LinearGradient>
                 </TouchableOpacity>
               </View>
             </View>
 
-            {/* Nút đăng xuất */}
+            {/* ⚙️ Cài đặt */}
+            <TouchableOpacity
+              style={styles.settingsButton}
+              onPress={() => (navigation as any).navigate("Settings")}
+            >
+              <LinearGradient
+                colors={[theme.secondary, theme.accent]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={[styles.settingsGradient, { opacity: 0.75 }]}
+              >
+                <Ionicons name="settings-outline" size={24} color="#FFF" />
+                <Text style={styles.settingsText}>{t("settings")}</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            {/* 🚪 Đăng xuất */}
             <TouchableOpacity
               style={styles.logoutButton}
               onPress={() => setConfirmVisible(true)}
             >
               <LinearGradient
-                colors={["#C06000", "#924900", "#6B3600"]}
+                colors={[theme.primary, theme.secondary]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
-                style={styles.logoutGradient}
+                style={[styles.logoutGradient, { opacity: 0.95 }]}
               >
                 <Ionicons name="log-out-outline" size={24} color="#FFF" />
-                <Text style={styles.logoutText}>Đăng xuất</Text>
+                <Text style={styles.logoutText}>{t("logout")}</Text>
               </LinearGradient>
             </TouchableOpacity>
           </>
         ) : (
           <View style={styles.notLoggedIn}>
-            <View style={styles.iconCircle}>
-              <Ionicons name="person-outline" size={80} color="#924900" />
+            <View
+              style={[styles.iconCircle, { backgroundColor: theme.lightBg }]}
+            >
+              <Ionicons name="person-outline" size={80} color={theme.primary} />
             </View>
-            <Text style={styles.notLoggedText}>Bạn chưa đăng nhập</Text>
-            <Text style={styles.notLoggedSubtext}>
-              Đăng nhập để trải nghiệm đầy đủ tính năng
+            <Text style={[styles.notLoggedText, { color: theme.primary }]}>
+              {t("notLoggedIn")}
+            </Text>
+            <Text style={[styles.notLoggedSubtext, { color: theme.text }]}>
+              {t("loginToExperience")}
             </Text>
 
             <TouchableOpacity
@@ -257,24 +329,29 @@ const AccountScreen = () => {
               }
             >
               <LinearGradient
-                colors={["#C06000", "#924900", "#6B3600"]}
+                colors={[theme.primary, theme.secondary, theme.accent]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.buttonGradient}
               >
-                <Text style={styles.buttonText}>Đăng nhập</Text>
+                <Text style={styles.buttonText}>{t("login")}</Text>
               </LinearGradient>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.signupButton}
+              style={[
+                styles.signupButton,
+                { backgroundColor: theme.lightBg, borderColor: theme.primary },
+              ]}
               onPress={() =>
                 (navigation as any).navigate("SignUp", {
                   redirectTo: "Account",
                 })
               }
             >
-              <Text style={styles.signupButtonText}>Đăng ký tài khoản</Text>
+              <Text style={[styles.signupButtonText, { color: theme.primary }]}>
+                {t("signUpAccount")}
+              </Text>
             </TouchableOpacity>
           </View>
         )}
@@ -292,27 +369,42 @@ const AccountScreen = () => {
             <Ionicons
               name="alert-circle-outline"
               size={50}
-              color="#924900"
+              color={theme.primary}
               style={{ marginBottom: 10 }}
             />
-            <Text style={styles.modalTitle}>Xác nhận đăng xuất</Text>
-            <Text style={styles.modalMessage}>
-              Bạn có chắc chắn muốn đăng xuất khỏi tài khoản không?
+            <Text style={[styles.modalTitle, { color: theme.primary }]}>
+              {t("confirmLogoutTitle")}
+            </Text>
+            <Text style={[styles.modalMessage, { color: theme.text }]}>
+              {t("confirmLogoutMessage")}
             </Text>
 
             <View style={styles.modalActions}>
               <Pressable
-                style={[styles.button, styles.cancelButton]}
+                style={[
+                  styles.button,
+                  styles.cancelButton,
+                  {
+                    backgroundColor: theme.lightBg,
+                    borderColor: theme.text + "30",
+                  },
+                ]}
                 onPress={() => setConfirmVisible(false)}
               >
-                <Text style={styles.cancelText}>Hủy</Text>
+                <Text style={[styles.cancelText, { color: theme.primary }]}>
+                  {t("cancel")}
+                </Text>
               </Pressable>
 
               <Pressable
-                style={[styles.button, styles.logoutConfirmButton]}
+                style={[
+                  styles.button,
+                  styles.logoutConfirmButton,
+                  { backgroundColor: theme.primary },
+                ]}
                 onPress={handleLogout}
               >
-                <Text style={styles.logoutConfirmText}>Đăng xuất</Text>
+                <Text style={styles.logoutConfirmText}>{t("logout")}</Text>
               </Pressable>
             </View>
           </View>
@@ -334,7 +426,7 @@ const AccountScreen = () => {
           activeOpacity={0.8}
         >
           <LinearGradient
-            colors={["#C06000", "#924900", "#6B3600"]}
+            colors={theme.aiGradient as any}
             style={styles.aiButtonGradient}
           >
             <Ionicons name="sparkles" size={28} color="#FFF" />
@@ -344,7 +436,7 @@ const AccountScreen = () => {
           </View>
         </TouchableOpacity>
       )}
-    </LinearGradient>
+    </View>
   );
 };
 
@@ -361,7 +453,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#FFF5E6",
   },
 
   // Header Profile
@@ -379,7 +470,7 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#924900",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -388,12 +479,10 @@ const styles = StyleSheet.create({
   username: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#924900",
     marginBottom: 5,
   },
   email: {
     fontSize: 16,
-    color: "#666",
   },
 
   // Section
@@ -409,13 +498,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#924900",
     marginLeft: 8,
   },
 
   // Info Card
   infoCard: {
-    backgroundColor: "#FFF",
     borderRadius: 15,
     padding: 15,
     shadowColor: "#000",
@@ -431,39 +518,32 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 15,
-    color: "#666",
     marginLeft: 10,
     flex: 1,
   },
   infoValue: {
     fontSize: 15,
-    color: "#333",
     fontWeight: "600",
   },
   infoDivider: {
     height: 1,
-    backgroundColor: "#E0E0E0",
     marginVertical: 8,
   },
 
   // Address Card
   addAddressCard: {
-    backgroundColor: "#FFF",
     borderRadius: 15,
     padding: 30,
     alignItems: "center",
     borderWidth: 2,
-    borderColor: "#E0E0E0",
     borderStyle: "dashed",
   },
   addAddressText: {
     fontSize: 16,
-    color: "#924900",
     marginTop: 10,
     fontWeight: "600",
   },
   addressCard: {
-    backgroundColor: "#FFF",
     borderRadius: 15,
     padding: 15,
     flexDirection: "row",
@@ -480,16 +560,13 @@ const styles = StyleSheet.create({
   addressName: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#333",
     marginBottom: 5,
   },
   addressDetail: {
     fontSize: 14,
-    color: "#666",
     marginVertical: 2,
   },
   editAddressBtn: {
-    backgroundColor: "#924900",
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -504,7 +581,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: "#999",
     marginTop: 15,
   },
   orderGroup: {
@@ -513,11 +589,9 @@ const styles = StyleSheet.create({
   orderGroupTitle: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#333",
     marginBottom: 12,
   },
   orderCard: {
-    backgroundColor: "#FFF",
     borderRadius: 15,
     padding: 15,
     marginBottom: 12,
@@ -536,7 +610,6 @@ const styles = StyleSheet.create({
   orderId: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#333",
   },
   statusBadge: {
     paddingHorizontal: 12,
@@ -550,12 +623,10 @@ const styles = StyleSheet.create({
   },
   orderDate: {
     fontSize: 14,
-    color: "#666",
     marginBottom: 10,
   },
   orderDivider: {
     height: 1,
-    backgroundColor: "#E0E0E0",
     marginVertical: 10,
   },
   orderFooter: {
@@ -565,21 +636,45 @@ const styles = StyleSheet.create({
   },
   orderTotal: {
     fontSize: 14,
-    color: "#666",
   },
   orderPrice: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#924900",
+  },
+
+  // Settings Button
+  settingsButton: {
+    marginHorizontal: 20,
+    marginTop: 20,
+    borderRadius: 15,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  settingsGradient: {
+    flexDirection: "row",
+    padding: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  settingsText: {
+    color: "#FFF",
+    fontSize: 18,
+    fontWeight: "bold",
+    marginLeft: 10,
   },
 
   // Logout Button
   logoutButton: {
     marginHorizontal: 20,
+    marginTop: 15,
     marginBottom: 30,
     borderRadius: 15,
     overflow: "hidden",
-    shadowColor: "#924900",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -646,11 +741,10 @@ const styles = StyleSheet.create({
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: "#FFF",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 25,
-    shadowColor: "#924900",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -659,12 +753,10 @@ const styles = StyleSheet.create({
   notLoggedText: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#924900",
     marginBottom: 10,
   },
   notLoggedSubtext: {
     fontSize: 16,
-    color: "#666",
     textAlign: "center",
     marginBottom: 30,
   },
@@ -673,7 +765,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     overflow: "hidden",
     marginBottom: 15,
-    shadowColor: "#924900",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -694,12 +786,9 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     padding: 16,
     alignItems: "center",
-    backgroundColor: "#FFF",
     borderWidth: 2,
-    borderColor: "#924900",
   },
   signupButtonText: {
-    color: "#924900",
     fontSize: 18,
     fontWeight: "bold",
   },
@@ -725,13 +814,11 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#924900",
     marginBottom: 10,
     textAlign: "center",
   },
   modalMessage: {
     fontSize: 15,
-    color: "#666",
     textAlign: "center",
     marginBottom: 25,
     lineHeight: 22,
@@ -749,15 +836,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 6,
   },
   cancelButton: {
-    backgroundColor: "#F5F5F5",
     borderWidth: 1,
-    borderColor: "#E0E0E0",
   },
-  logoutConfirmButton: {
-    backgroundColor: "#924900",
-  },
+  logoutConfirmButton: {},
   cancelText: {
-    color: "#924900",
     fontWeight: "600",
     fontSize: 16,
   },
@@ -775,7 +857,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    shadowColor: "#924900",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
