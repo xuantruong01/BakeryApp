@@ -129,7 +129,7 @@ const OrderHistoryScreen = () => {
         updatedAt: new Date(),
       };
       // Chuyển sang màn hình thanh toán với dữ liệu mới
-      navigation.navigate("Checkout", { reorderData: newOrder });
+      (navigation as any).navigate("Checkout", { reorderData: newOrder });
     } catch (error) {
       Alert.alert("Lỗi", "Không thể tạo lại đơn hàng");
     }
@@ -253,25 +253,47 @@ const OrderHistoryScreen = () => {
                   </View>
                 </View>
 
-                {/* Danh sách sản phẩm */}
+                {/* Danh sách sản phẩm với nút đánh giá */}
                 {order.items && order.items.length > 0 && (
                   <View style={styles.itemsContainer}>
                     <Text style={styles.itemsTitle}>Sản phẩm:</Text>
-                    {order.items.slice(0, 3).map((item: any, index: number) => (
-                      <View key={index} style={styles.itemRow}>
-                        <Text style={styles.itemName} numberOfLines={1}>
-                          • {item.name || "Sản phẩm"}
-                        </Text>
-                        <Text style={styles.itemQuantity}>
-                          x{item.quantity || 1}
-                        </Text>
+                    {order.items.map((item: any, index: number) => (
+                      <View key={index} style={styles.itemRowWithAction}>
+                        <View style={styles.itemInfo}>
+                          <Text style={styles.itemName} numberOfLines={1}>
+                            • {item.name || "Sản phẩm"}
+                          </Text>
+                          <Text style={styles.itemQuantity}>
+                            x{item.quantity || 1}
+                          </Text>
+                        </View>
+                        {order.status === "completed" && (
+                          <TouchableOpacity
+                            style={styles.reviewItemButton}
+                            onPress={() => {
+                              console.log("⭐ REVIEW BUTTON PRESSED");
+                              console.log("Product ID:", item.id);
+                              console.log("Product Name:", item.name);
+                              console.log("Order ID:", order.id);
+                              console.log(
+                                "Full item data:",
+                                JSON.stringify(item, null, 2)
+                              );
+                              (navigation as any).navigate("Review", {
+                                productId: item.id,
+                                orderId: order.id,
+                              });
+                            }}
+                          >
+                            <Ionicons
+                              name="star-outline"
+                              size={16}
+                              color="#FF9500"
+                            />
+                          </TouchableOpacity>
+                        )}
                       </View>
                     ))}
-                    {order.items.length > 3 && (
-                      <Text style={styles.moreItems}>
-                        +{order.items.length - 3} sản phẩm khác
-                      </Text>
-                    )}
                   </View>
                 )}
 
@@ -449,6 +471,27 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
     marginTop: 4,
   },
+  itemRowWithAction: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+    paddingVertical: 4,
+  },
+  itemInfo: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    flex: 1,
+  },
+  reviewItemButton: {
+    marginLeft: 10,
+    padding: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#FF9500",
+    backgroundColor: "#FFF5E6",
+  },
   reorderButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -458,10 +501,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 10,
     borderWidth: 1.5,
+    borderColor: "#924900",
   },
   reorderText: {
     fontSize: 15,
     fontWeight: "600",
     marginLeft: 8,
+    color: "#924900",
   },
 });

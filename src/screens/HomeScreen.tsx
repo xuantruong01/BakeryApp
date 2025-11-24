@@ -417,12 +417,18 @@ const HomeScreen = () => {
                     <TouchableOpacity
                       key={item.id}
                       style={styles.hotItem}
-                      onPress={() =>
-                        (
-                          navigation.getParent("rootStack") ??
-                          navigation.getParent()?.getParent()
-                        )?.navigate("ProductDetail", { product: item })
-                      }
+                      onPress={() => {
+                        console.log("🔵 HOT ITEM PRESSED:", item.id, item.name);
+                        console.log(
+                          "🔵 Product data:",
+                          JSON.stringify(item, null, 2)
+                        );
+                        console.log("🔵 Navigating to ProductDetail...");
+                        navigation.navigate(
+                          "ProductDetail" as never,
+                          { product: item } as never
+                        );
+                      }}
                     >
                       <Image
                         source={{
@@ -450,12 +456,18 @@ const HomeScreen = () => {
             <View style={styles.bannerWrap}>
               <BannerCarousel
                 data={hotProducts.slice(0, 5)}
-                onPressItem={(item) =>
-                  (
-                    navigation.getParent("rootStack") ??
-                    navigation.getParent()?.getParent()
-                  )?.navigate("ProductDetail", { product: item })
-                }
+                onPressItem={(item) => {
+                  console.log("🟢 BANNER PRESSED:", item.id, item.name);
+                  console.log(
+                    "🟢 Product data:",
+                    JSON.stringify(item, null, 2)
+                  );
+                  console.log("🟢 Navigating to ProductDetail...");
+                  navigation.navigate(
+                    "ProductDetail" as never,
+                    { product: item } as never
+                  );
+                }}
               />
             </View>
 
@@ -484,15 +496,25 @@ const HomeScreen = () => {
                           key={cat.categoryId}
                           activeOpacity={0.85}
                           style={styles.categoryItem}
-                          onPress={() =>
-                            (
-                              navigation.getParent("rootStack") ??
-                              navigation.getParent()?.getParent()
-                            )?.navigate("CategoryProducts", {
-                              categoryId: cat.categoryId,
-                              categoryName: cat.name,
-                            })
-                          }
+                          onPress={() => {
+                            console.log(
+                              "🔶 CATEGORY PRESSED:",
+                              cat.categoryId,
+                              cat.name
+                            );
+                            console.log(
+                              "🔶 Category data:",
+                              JSON.stringify(cat, null, 2)
+                            );
+                            console.log("🔶 Navigating to CategoryProducts...");
+                            navigation.navigate(
+                              "CategoryProducts" as never,
+                              {
+                                categoryId: cat.categoryId,
+                                categoryName: cat.name,
+                              } as never
+                            );
+                          }}
                         >
                           <Image
                             source={{
@@ -565,12 +587,22 @@ const HomeScreen = () => {
                   renderItem={({ item }) => (
                     <ProductCard
                       item={item}
-                      onPress={() =>
-                        (
-                          navigation.getParent("rootStack") ??
-                          navigation.getParent()?.getParent()
-                        )?.navigate("ProductDetail", { product: item })
-                      }
+                      onPress={() => {
+                        console.log(
+                          "🟡 PRODUCT CARD PRESSED:",
+                          item.id,
+                          item.name
+                        );
+                        console.log(
+                          "🟡 Product data:",
+                          JSON.stringify(item, null, 2)
+                        );
+                        console.log("🟡 Navigating to ProductDetail...");
+                        navigation.navigate(
+                          "ProductDetail" as never,
+                          { product: item } as never
+                        );
+                      }}
                     />
                   )}
                   scrollEnabled={false}
