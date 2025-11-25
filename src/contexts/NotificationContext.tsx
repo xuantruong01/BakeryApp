@@ -20,19 +20,24 @@ export const useNotifications = () => useContext(NotificationContext);
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [lastViewedTime, setLastViewedTime] = useState<Date | null>(null);
+  const lastViewedTimeRef = React.useRef<Date | null>(null);
 
+  // Load last viewed time một lần khi mount
   useEffect(() => {
-    // Load last viewed time from AsyncStorage
     loadLastViewedTime();
+  }, []);
 
-    // Setup real-time listener for pending orders
+  // Setup real-time listener CHỈ MỘT LẦN khi mount
+  useEffect(() => {
     const ordersQuery = query(
       collection(db, 'orders'),
       where('status', '==', 'pending')
     );
 
     const unsubscribe = onSnapshot(ordersQuery, (snapshot) => {
-      if (!lastViewedTime) {
+      const currentLastViewed = lastViewedTimeRef.current;
+      
+      if (!currentLastViewed) {
         // Nếu chưa có thời gian xem, count tất cả
         setUnreadCount(snapshot.size);
       } else {
@@ -40,20 +45,22 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         const newOrders = snapshot.docs.filter((doc) => {
           const orderData = doc.data();
           const createdAt = orderData.createdAt?.toDate?.() || new Date(orderData.createdAt || 0);
-          return createdAt > lastViewedTime;
+          return createdAt > currentLastViewed;
         });
         setUnreadCount(newOrders.length);
       }
     });
 
     return () => unsubscribe();
-  }, [lastViewedTime]);
+  }, []); // Empty dependency - chỉ chạy 1 lần
 
   const loadLastViewedTime = async () => {
     try {
       const savedTime = await AsyncStorage.getItem('admin_notifications_last_viewed');
       if (savedTime) {
-        setLastViewedTime(new Date(savedTime));
+        const time = new Date(savedTime);
+        setLastViewedTime(time);
+        lastViewedTimeRef.current = time;
       }
     } catch (error) {
       console.error('Error loading last viewed time:', error);
@@ -63,6 +70,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const markAsViewed = async () => {
     const now = new Date();
     setLastViewedTime(now);
+    lastViewedTimeRef.current = now;
     setUnreadCount(0);
     
     try {
