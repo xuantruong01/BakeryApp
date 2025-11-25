@@ -7,6 +7,7 @@ import {
   TextInput,
   FlatList,
   SafeAreaView,
+  ScrollView,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import {
@@ -129,37 +130,71 @@ export default function SearchResultScreen() {
       </View>
 
       {/* ----- Thanh sắp xếp ----- */}
-      <View style={styles.toolbar}>
-        <ScrollChip
-          options={[
+      <View style={[styles.toolbar, { backgroundColor: theme.background }]}>
+        <Text style={[styles.filterLabel, { color: theme.text }]}>
+          {t("sortBy")}:
+        </Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={true}
+          contentContainerStyle={styles.chipsContainer}
+          scrollEventThrottle={16}
+          nestedScrollEnabled={true}
+        >
+          {[
             { key: "relevance", label: t("sortBy") },
             { key: "priceAsc", label: t("priceAsc") },
             { key: "priceDesc", label: t("priceDesc") },
             { key: "nameAsc", label: t("nameAsc") },
-          ]}
-          value={sortBy}
-          onChange={(v) =>
-            setSortBy(v as "relevance" | "priceAsc" | "priceDesc" | "nameAsc")
-          }
-        />
+          ].map((opt) => {
+            const active = sortBy === opt.key;
+            return (
+              <TouchableOpacity
+                key={opt.key}
+                onPress={() =>
+                  setSortBy(
+                    opt.key as
+                      | "relevance"
+                      | "priceAsc"
+                      | "priceDesc"
+                      | "nameAsc"
+                  )
+                }
+                style={[
+                  styles.chip,
+                  active && [
+                    styles.chipActive,
+                    { backgroundColor: theme.primary },
+                  ],
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.chipText,
+                    active && styles.chipTextActive,
+                  ]}
+                >
+                  {opt.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
         <Text style={[styles.resultCount, { color: theme.text }]}>
-          {filtered.length} sản phẩm
+          {filtered.length} {t("product")}
         </Text>
       </View>
 
       {/* ----- Danh sách kết quả ----- */}
       <FlatList
-        contentContainerStyle={{ paddingBottom: 20 }}
+        contentContainerStyle={{ paddingBottom: 100 }}
         data={filtered}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <ProductCard
             item={item}
             onPress={() =>
-              (
-                navigation.getParent("rootStack") ??
-                navigation.getParent()?.getParent()
-              )?.navigate("ProductDetail", { product: item })
+              (navigation as any).navigate("ProductDetail", { product: item })
             }
           />
         )}
@@ -211,7 +246,7 @@ function ScrollChip({
 
 /* ---------- Styles ---------- */
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
+  safe: { flex: 1, backgroundColor: "#f5f5f5" },
 
   /* Thanh tìm kiếm */
   searchBar: {
@@ -220,32 +255,55 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     borderRadius: 10,
     borderWidth: 1,
+    borderColor: "#ddd",
     paddingHorizontal: 10,
-    marginBottom: 10,
+    marginBottom: 12,
     marginTop: 10,
+    backgroundColor: "#fff",
   },
   iconLeft: { marginRight: 8 },
   iconRight: { marginLeft: 6 },
-  searchInput: { flex: 1, fontSize: 16, paddingVertical: 8 },
+  searchInput: { flex: 1, fontSize: 16, paddingVertical: 10 },
 
   /* Thanh sắp xếp */
   toolbar: {
     paddingHorizontal: 20,
-    paddingBottom: 8,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: "#e0e0e0",
+    backgroundColor: "#fff",
   },
-  chips: { flexDirection: "row", gap: 8, marginBottom: 6 },
+  filterLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#666",
+    marginBottom: 8,
+  },
+  chipsContainer: {
+    flexDirection: "row",
+    gap: 10,
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+  },
   chip: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     borderRadius: 20,
+    backgroundColor: "#f0f0f0",
+    borderWidth: 1,
+    borderColor: "#ddd",
+    alignItems: "center",
+    justifyContent: "center",
+    height: 36,
   },
-  chipActive: {},
-  chipText: { color: "#333", fontWeight: "600", fontSize: 12 },
+  chipActive: {
+    backgroundColor: "#E58E26",
+    borderColor: "#E58E26",
+  },
+  chipText: { color: "#666", fontWeight: "600", fontSize: 12 },
   chipTextActive: { color: "#fff" },
 
-  resultCount: { fontSize: 13, color: "#555", fontWeight: "500" },
+  resultCount: { fontSize: 13, color: "#999", fontWeight: "500", marginTop: 8 },
 
-  empty: { alignItems: "center", marginTop: 40 },
+  empty: { alignItems: "center", marginTop: 60 },
 });

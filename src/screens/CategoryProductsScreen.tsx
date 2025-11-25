@@ -105,12 +105,13 @@ export default function CategoryProductsScreen() {
           renderItem={({ item }) => (
             <ProductCard
               item={item}
-              onPress={() =>
-                (
-                  navigation.getParent("rootStack") ??
-                  navigation.getParent()?.getParent()
-                )?.navigate("ProductDetail", { product: item })
-              }
+              onPress={() => {
+                // Use the same navigation method as HomeScreen
+                (navigation as any).navigate(
+                  "ProductDetail",
+                  { product: item }
+                );
+              }}
             />
           )}
         />
