@@ -130,9 +130,24 @@ const AdminHomeScreen = ({ navigation }) => {
     }
   };
 
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    fetchDashboardData();
+    
+    try {
+      // Chỉ refresh products và users count, KHÔNG tạo listener mới
+      const productsSnapshot = await getDocs(collection(db, "products"));
+      const usersSnapshot = await getDocs(collection(db, "users"));
+      
+      setStats(prev => ({
+        ...prev,
+        totalProducts: productsSnapshot.size,
+        totalCustomers: usersSnapshot.size,
+      }));
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const StatCard = ({ icon, title, value, color, onPress }: any) => (

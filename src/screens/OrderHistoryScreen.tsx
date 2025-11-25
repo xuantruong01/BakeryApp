@@ -14,7 +14,6 @@ import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
 import { db } from "../services/firebaseConfig";
-import { LinearGradient } from "expo-linear-gradient";
 import { useApp } from "../contexts/AppContext";
 
 const OrderHistoryScreen = () => {

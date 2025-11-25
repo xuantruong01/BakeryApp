@@ -15,8 +15,7 @@ import {
   query,
   where,
   getDocs,
-  onSnapshot,
-} from "firebase/firestore";
+} from "firebase/firestore"; // Xóa onSnapshot
 import { db } from "../../services/firebaseConfig";
 import { useApp } from "../../contexts/AppContext";
 import { useNotifications } from "../../contexts/NotificationContext";
@@ -31,14 +30,23 @@ const AdminNotificationsScreen = ({ navigation }) => {
   useEffect(() => {
     // Mark notifications as viewed khi vào trang
     markAsViewed();
+    
+    // Load notifications một lần khi mount
+    fetchNotifications();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Chỉ chạy 1 lần khi mount
 
-    // Setup real-time listener
-    const ordersQuery = query(
-      collection(db, "orders"),
-      where("status", "==", "pending")
-    );
-
-    const unsubscribe = onSnapshot(ordersQuery, (ordersSnapshot) => {
+  const fetchNotifications = async () => {
+    try {
+      setLoading(true);
+      
+      const ordersQuery = query(
+        collection(db, "orders"),
+        where("status", "==", "pending")
+      );
+      
+      const ordersSnapshot = await getDocs(ordersQuery);
+      
       // Sort ở client theo createdAt descending
       const notificationsData = ordersSnapshot.docs
         .map((doc) => ({
@@ -53,18 +61,12 @@ const AdminNotificationsScreen = ({ navigation }) => {
         });
 
       setNotifications(notificationsData);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+    } finally {
       setLoading(false);
       setRefreshing(false);
-    });
-
-    // Cleanup listener khi unmount
-    return () => unsubscribe();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Chỉ chạy 1 lần khi mount
-
-  const fetchNotifications = async () => {
-    // Refresh được handle bởi real-time listener, chỉ cần reset refreshing state
-    setRefreshing(false);
+    }
   };
 
   const onRefresh = () => {
