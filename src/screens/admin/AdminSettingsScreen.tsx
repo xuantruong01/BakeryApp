@@ -32,14 +32,14 @@ const AdminSettingsScreen = ({ navigation }) => {
   );
 
   const themes = [
-    { id: "orange", name: "Cam", color: "#E58E26" },
-    { id: "blue", name: "Xanh dương", color: "#4A90E2" },
-    { id: "green", name: "Xanh lá", color: "#28A745" },
+    { id: "orange", name: t("orange"), color: "#E58E26" },
+    { id: "blue", name: t("blue"), color: "#4A90E2" },
+    { id: "green", name: t("green"), color: "#28A745" },
   ];
 
   const languages = [
-    { id: "vi", name: "Tiếng Việt", icon: "🇻🇳" },
-    { id: "en", name: "English", icon: "🇬🇧" },
+    { id: "vi", name: t("vietnamese"), icon: "🇻🇳" },
+    { id: "en", name: t("english"), icon: "🇬🇧" },
   ];
 
   const handleThemeChange = async (themeId) => {
@@ -56,9 +56,9 @@ const AdminSettingsScreen = ({ navigation }) => {
     try {
       await setLanguage(languageId);
       setLanguageModalVisible(false);
-      Alert.alert("Success", "Language changed successfully!");
+      Alert.alert(t("success"), t("languageChanged"));
     } catch (error) {
-      Alert.alert("Error", "Cannot change language");
+      Alert.alert(t("error"), t("cannotChangeLanguage"));
     }
   };
 
@@ -99,14 +99,14 @@ const AdminSettingsScreen = ({ navigation }) => {
         >
           <Ionicons name="arrow-back" size={24} color="#FFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Cài đặt hệ thống</Text>
+        <Text style={styles.headerTitle}>{t("systemSettings")}</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView style={styles.container}>
         {/* Thông báo */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Thông báo</Text>
+          <Text style={styles.sectionTitle}>{t("notifications")}</Text>
           <SettingItem
             icon="notifications"
             title={t("notifications")}
@@ -142,19 +142,19 @@ const AdminSettingsScreen = ({ navigation }) => {
           <Text style={styles.sectionTitle}>{t("appearance")}</Text>
           <SettingItem
             icon="color-palette"
-            title="Chủ đề"
+            title={t("theme")}
             subtitle={
-              themes.find((t) => t.id === themeName)?.name ||
-              "Chọn màu sắc giao diện"
+              themes.find((theme) => theme.id === themeName)?.name ||
+              t("selectTheme")
             }
             color="#FF6B6B"
             onPress={() => setThemeModalVisible(true)}
           />
           <SettingItem
             icon="language"
-            title="Ngôn ngữ"
+            title={t("language")}
             subtitle={
-              languages.find((l) => l.id === language)?.name || "Tiếng Việt"
+              languages.find((l) => l.id === language)?.name || t("vietnamese")
             }
             color="#607D8B"
             onPress={() => setLanguageModalVisible(true)}
@@ -163,13 +163,13 @@ const AdminSettingsScreen = ({ navigation }) => {
 
         {/* Thông tin */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Thông tin</Text>
+          <Text style={styles.sectionTitle}>{t("information")}</Text>
           <SettingItem
             icon="information-circle"
-            title="Phiên bản"
+            title={t("version")}
             subtitle="1.0.0"
             color="#95A5A6"
-            onPress={() => Alert.alert("Phiên bản", "Bakery Admin v1.0.0")}
+            onPress={() => Alert.alert(t("version"), "Bakery Admin v1.0.0")}
           />
         </View>
       </ScrollView>
@@ -184,7 +184,7 @@ const AdminSettingsScreen = ({ navigation }) => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Chọn chủ đề</Text>
+              <Text style={styles.modalTitle}>{t("selectTheme")}</Text>
               <TouchableOpacity onPress={() => setThemeModalVisible(false)}>
                 <Ionicons name="close" size={24} color="#333" />
               </TouchableOpacity>
@@ -230,7 +230,7 @@ const AdminSettingsScreen = ({ navigation }) => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Chọn ngôn ngữ</Text>
+              <Text style={styles.modalTitle}>{t("selectLanguage")}</Text>
               <TouchableOpacity onPress={() => setLanguageModalVisible(false)}>
                 <Ionicons name="close" size={24} color="#333" />
               </TouchableOpacity>

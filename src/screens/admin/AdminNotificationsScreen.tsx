@@ -10,7 +10,13 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { collection, query, where, getDocs, onSnapshot } from "firebase/firestore";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  onSnapshot,
+} from "firebase/firestore";
 import { db } from "../../services/firebaseConfig";
 import { useApp } from "../../contexts/AppContext";
 import { useNotifications } from "../../contexts/NotificationContext";
@@ -82,10 +88,10 @@ const AdminNotificationsScreen = ({ navigation }) => {
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
 
-    if (minutes < 1) return "Vừa xong";
-    if (minutes < 60) return `${minutes} phút trước`;
-    if (hours < 24) return `${hours} giờ trước`;
-    return `${days} ngày trước`;
+    if (minutes < 1) return t("justNow");
+    if (minutes < 60) return `${minutes} ${t("minutesAgo")}`;
+    if (hours < 24) return `${hours} ${t("hoursAgo")}`;
+    return `${days} ${t("daysAgo")}`;
   };
 
   const formatPrice = (price) => {
@@ -104,20 +110,20 @@ const AdminNotificationsScreen = ({ navigation }) => {
       </View>
       <View style={styles.notificationContent}>
         <Text style={styles.notificationTitle}>
-          Đơn hàng mới #{item.id.slice(0, 8)}
+          {t("newOrder")} #{item.id.slice(0, 8)}
         </Text>
         <Text style={styles.notificationMessage}>
-          Khách hàng: {item.customerName || "N/A"}
+          {t("customer")}: {item.customerName || "N/A"}
         </Text>
         <Text style={styles.notificationMessage}>
-          Tổng tiền: {formatPrice(item.total || 0)}
+          {t("total")}: {formatPrice(item.total || 0)}
         </Text>
         <Text style={styles.notificationTime}>
           {formatDate(item.createdAt)}
         </Text>
       </View>
       <View style={styles.badge}>
-        <Text style={styles.badgeText}>Mới</Text>
+        <Text style={styles.badgeText}>{t("new")}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -142,7 +148,7 @@ const AdminNotificationsScreen = ({ navigation }) => {
         >
           <Ionicons name="arrow-back" size={24} color="#FFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Thông báo</Text>
+        <Text style={styles.headerTitle}>{t("notifications")}</Text>
         <View style={{ width: 24 }} />
       </View>
 
