@@ -34,7 +34,7 @@ import { useApp } from "../contexts/AppContext";
 
 const { width } = Dimensions.get("window");
 const ITEM_SIZE = (width - 60) / 4; // 4 cột / hàng
-const MAX_ITEMS_PER_PAGE = 8; // 2 hàng × 4 cột
+const MAX_ITEMS_PER_PAGE = 10; // 2 hàng × 5 cột
 
 type Category = { categoryId: string; name: string; imageUrl?: string };
 
@@ -489,8 +489,14 @@ const HomeScreen = () => {
                   decelerationRate="fast"
                   onScroll={handleCategoryScroll}
                   scrollEventThrottle={16}
+                  pagingEnabled={true}
                   renderItem={({ item }) => (
-                    <View style={styles.categoryPage}>
+                    <View
+                      style={[
+                        styles.categoryPage,
+                        { width: ITEM_SIZE * 5 + 40 }, // 5 cột
+                      ]}
+                    >
                       {item.map((cat) => (
                         <TouchableOpacity
                           key={cat.categoryId}
@@ -728,11 +734,13 @@ const styles = StyleSheet.create({
 
   /* Categories */
   categoryPage: {
-    width: width - 40, // trừ padding card
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
+    alignContent: "flex-start",
     paddingTop: 4,
+    paddingHorizontal: 0,
+    gap: 10,
   },
   categoryItem: {
     width: ITEM_SIZE,
