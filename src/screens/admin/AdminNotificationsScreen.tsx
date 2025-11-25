@@ -59,7 +59,8 @@ const AdminNotificationsScreen = ({ navigation }) => {
 
     // Cleanup listener khi unmount
     return () => unsubscribe();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Chỉ chạy 1 lần khi mount
 
   const fetchNotifications = async () => {
     // Refresh được handle bởi real-time listener, chỉ cần reset refreshing state
