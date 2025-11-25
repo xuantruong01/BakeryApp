@@ -11,13 +11,15 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "../../services/firebaseConfig";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useApp } from "../../contexts/AppContext";
+import { useNotifications } from "../../contexts/NotificationContext";
 
 const AdminHomeScreen = ({ navigation }) => {
   const { theme, t } = useApp();
+  const { unreadCount } = useNotifications();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState({
@@ -32,7 +34,20 @@ const AdminHomeScreen = ({ navigation }) => {
   });
 
   useEffect(() => {
-    checkAuthAndFetchData();
+    let unsubscribe: any = null;
+    
+    const setupListener = async () => {
+      unsubscribe = await checkAuthAndFetchData();
+    };
+    
+    setupListener();
+    
+    // Cleanup listener khi unmount
+    return () => {
+      if (unsubscribe && typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
   }, []);
 
   const checkAuthAndFetchData = async () => {
@@ -45,12 +60,13 @@ const AdminHomeScreen = ({ navigation }) => {
             onPress: () => navigation.replace("Login"),
           },
         ]);
-        return;
+        return null;
       }
-      fetchDashboardData();
+      return await fetchDashboardData();
     } catch (error) {
       console.error("Error checking auth:", error);
       navigation.replace("Login");
+      return null;
     }
   };
 
@@ -58,52 +74,57 @@ const AdminHomeScreen = ({ navigation }) => {
     try {
       setLoading(true);
 
-      // Lấy tất cả đơn hàng
-      const ordersSnapshot = await getDocs(collection(db, "orders"));
-      const orders = ordersSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as any[];
-
-      // Tính toán thống kê đơn hàng
-      const totalOrders = orders.length;
-      const pendingOrders = orders.filter((o) => o.status === "pending").length;
-      const processingOrders = orders.filter(
-        (o) => o.status === "processing"
-      ).length;
-      const completedOrders = orders.filter(
-        (o) => o.status === "completed"
-      ).length;
-      const cancelledOrders = orders.filter(
-        (o) => o.status === "cancelled"
-      ).length;
-
-      // Tính tổng doanh thu từ đơn hàng hoàn thành
-      const totalRevenue = orders
-        .filter((o) => o.status === "completed")
-        .reduce((sum, order) => sum + (order.total || 0), 0);
-
-      // Lấy số lượng sản phẩm
+      // Lấy products và users count một lần (không cần real-time)
       const productsSnapshot = await getDocs(collection(db, "products"));
       const totalProducts = productsSnapshot.size;
-
-      // Lấy số lượng khách hàng (users)
+      
       const usersSnapshot = await getDocs(collection(db, "users"));
       const totalCustomers = usersSnapshot.size;
 
-      setStats({
-        totalOrders,
-        pendingOrders,
-        processingOrders,
-        completedOrders,
-        cancelledOrders,
-        totalRevenue,
-        totalProducts,
-        totalCustomers,
+      // Real-time listener cho orders
+      const unsubscribe = onSnapshot(collection(db, "orders"), (ordersSnapshot) => {
+        const orders = ordersSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as any[];
+
+        // Tính toán thống kê đơn hàng
+        const totalOrders = orders.length;
+        const pendingOrders = orders.filter((o) => o.status === "pending").length;
+        const processingOrders = orders.filter(
+          (o) => o.status === "processing"
+        ).length;
+        const completedOrders = orders.filter(
+          (o) => o.status === "completed"
+        ).length;
+        const cancelledOrders = orders.filter(
+          (o) => o.status === "cancelled"
+        ).length;
+
+        // Tính tổng doanh thu từ đơn hàng hoàn thành
+        const totalRevenue = orders
+          .filter((o) => o.status === "completed")
+          .reduce((sum, order) => sum + (order.total || 0), 0);
+
+        setStats({
+          totalOrders,
+          pendingOrders,
+          processingOrders,
+          completedOrders,
+          cancelledOrders,
+          totalRevenue,
+          totalProducts,
+          totalCustomers,
+        });
+
+        setLoading(false);
+        setRefreshing(false);
       });
+
+      // Return unsubscribe function
+      return unsubscribe;
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
-    } finally {
       setLoading(false);
       setRefreshing(false);
     }
@@ -150,8 +171,25 @@ const AdminHomeScreen = ({ navigation }) => {
         }
       >
         <View style={[styles.header, { backgroundColor: theme.primary }]}>
-          <Text style={styles.headerTitle}>{t("dashboard")}</Text>
-          <Text style={styles.headerSubtitle}>{t("overview")}</Text>
+          <View style={styles.headerTop}>
+            <View style={styles.headerTextContainer}>
+              <Text style={styles.headerTitle}>{t("dashboard")}</Text>
+              <Text style={styles.headerSubtitle}>{t("overview")}</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.notificationButton}
+              onPress={() => navigation.navigate("AdminNotifications")}
+            >
+              <Ionicons name="notifications" size={28} color="#FFFFFF" />
+              {unreadCount > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Thống kê đơn hàng */}
@@ -255,6 +293,14 @@ const styles = StyleSheet.create({
     padding: 24,
     paddingTop: 48,
   },
+  headerTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+  headerTextContainer: {
+    flex: 1,
+  },
   headerTitle: {
     fontSize: 28,
     fontWeight: "bold",
@@ -265,6 +311,27 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#FFFFFF",
     opacity: 0.9,
+  },
+  notificationButton: {
+    position: "relative",
+    padding: 8,
+  },
+  badge: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    backgroundColor: "#FF3B30",
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 5,
+  },
+  badgeText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "bold",
   },
   section: {
     marginTop: 16,

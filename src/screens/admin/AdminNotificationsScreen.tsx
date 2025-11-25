@@ -10,30 +10,29 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, onSnapshot } from "firebase/firestore";
 import { db } from "../../services/firebaseConfig";
 import { useApp } from "../../contexts/AppContext";
+import { useNotifications } from "../../contexts/NotificationContext";
 
 const AdminNotificationsScreen = ({ navigation }) => {
   const { theme, t } = useApp();
+  const { markAsViewed } = useNotifications();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    fetchNotifications();
-  }, []);
+    // Mark notifications as viewed khi vào trang
+    markAsViewed();
 
-  const fetchNotifications = async () => {
-    try {
-      setLoading(true);
-      // Lấy các đơn hàng pending (không dùng orderBy để tránh cần composite index)
-      const ordersQuery = query(
-        collection(db, "orders"),
-        where("status", "==", "pending")
-      );
-      const ordersSnapshot = await getDocs(ordersQuery);
+    // Setup real-time listener
+    const ordersQuery = query(
+      collection(db, "orders"),
+      where("status", "==", "pending")
+    );
 
+    const unsubscribe = onSnapshot(ordersQuery, (ordersSnapshot) => {
       // Sort ở client theo createdAt descending
       const notificationsData = ordersSnapshot.docs
         .map((doc) => ({
@@ -48,12 +47,17 @@ const AdminNotificationsScreen = ({ navigation }) => {
         });
 
       setNotifications(notificationsData);
-    } catch (error) {
-      console.error("Error fetching notifications:", error);
-    } finally {
       setLoading(false);
       setRefreshing(false);
-    }
+    });
+
+    // Cleanup listener khi unmount
+    return () => unsubscribe();
+  }, []);
+
+  const fetchNotifications = async () => {
+    // Refresh được handle bởi real-time listener, chỉ cần reset refreshing state
+    setRefreshing(false);
   };
 
   const onRefresh = () => {
