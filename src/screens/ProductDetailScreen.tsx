@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,12 +8,24 @@ import {
   TouchableOpacity,
   Alert,
   TextInput,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { useFocusEffect } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { doc, getDoc, setDoc, updateDoc, increment } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  increment,
+  collection,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
 import { db } from "../services/firebaseConfig";
 import { useApp } from "../contexts/AppContext";
 
@@ -21,6 +33,62 @@ export default function ProductDetailScreen({ route, navigation }: any) {
   const { theme, t } = useApp();
   const { product } = route.params;
   const [quantity, setQuantity] = useState(1);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(true);
+  const [averageRating, setAverageRating] = useState(0);
+  const [reviewCount, setReviewCount] = useState(0);
+
+  useEffect(() => {
+    fetchReviews();
+  }, []);
+
+  // Refresh reviews khi quay lại màn hình này
+  useFocusEffect(
+    useCallback(() => {
+      fetchReviews();
+    }, [])
+  );
+
+  /* ------------------- Lấy đánh giá ------------------- */
+  const fetchReviews = async () => {
+    try {
+      setLoadingReviews(true);
+
+      // Lấy thông tin rating từ product
+      const productRef = doc(db, "products", product.id);
+      const productSnap = await getDoc(productRef);
+      if (productSnap.exists()) {
+        const productData = productSnap.data();
+        setAverageRating(productData.averageRating || 0);
+        setReviewCount(productData.reviewCount || 0);
+      }
+
+      // Lấy danh sách reviews (không dùng orderBy để tránh yêu cầu composite index)
+      const reviewsRef = collection(db, "reviews");
+      const reviewsQuery = query(
+        reviewsRef,
+        where("productId", "==", product.id)
+      );
+      const reviewsSnapshot = await getDocs(reviewsQuery);
+      const reviewsList = reviewsSnapshot.docs
+        .map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }))
+        .sort((a: any, b: any) => {
+          // Sort by createdAt descending
+          const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt);
+          const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt);
+          return dateB.getTime() - dateA.getTime();
+        })
+        .slice(0, 10); // Limit to 10 reviews
+      setReviews(reviewsList);
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+    } finally {
+      setLoadingReviews(false);
+    }
+  };
 
   /* ------------------- Thêm vào giỏ hàng ------------------- */
   const addToCart = async () => {
@@ -238,6 +306,135 @@ export default function ProductDetailScreen({ route, navigation }: any) {
             <Text style={[styles.desc, { color: theme.text + "80" }]}>
               {product.description || t("noDescription")}
             </Text>
+          </View>
+
+          {/* Reviews Section */}
+          <View
+            style={[
+              styles.reviewsCard,
+              {
+                backgroundColor: theme.background,
+                borderColor: theme.primary + "30",
+              },
+            ]}
+          >
+            <View style={styles.reviewsHeader}>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                {t("customerReviews")}
+              </Text>
+              {reviewCount > 0 && (
+                <View style={styles.ratingBadge}>
+                  <Ionicons name="star" size={18} color="#FFD700" />
+                  <Text style={[styles.ratingText, { color: theme.text }]}>
+                    {averageRating.toFixed(1)} ({reviewCount})
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {loadingReviews ? (
+              <ActivityIndicator
+                color={theme.primary}
+                style={{ marginVertical: 20 }}
+              />
+            ) : reviews.length === 0 ? (
+              <View style={styles.noReviewsContainer}>
+                <Ionicons
+                  name="chatbox-ellipses-outline"
+                  size={50}
+                  color={theme.text + "40"}
+                />
+                <Text
+                  style={[styles.noReviewsText, { color: theme.text + "60" }]}
+                >
+                  {t("noReviewsYet")}
+                </Text>
+                <Text
+                  style={[
+                    styles.noReviewsSubtext,
+                    { color: theme.text + "40" },
+                  ]}
+                >
+                  {t("beFirstToReview")}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.reviewsList}>
+                {reviews.map((review) => (
+                  <View
+                    key={review.id}
+                    style={[
+                      styles.reviewItem,
+                      { borderBottomColor: theme.primary + "20" },
+                    ]}
+                  >
+                    <View style={styles.reviewHeader}>
+                      <View style={styles.reviewUserInfo}>
+                        <View
+                          style={[
+                            styles.avatarCircle,
+                            { backgroundColor: theme.primary + "30" },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.avatarText,
+                              { color: theme.primary },
+                            ]}
+                          >
+                            {review.userName?.charAt(0).toUpperCase() || "?"}
+                          </Text>
+                        </View>
+                        <View style={styles.reviewUserDetails}>
+                          <Text
+                            style={[
+                              styles.reviewUserName,
+                              { color: theme.text },
+                            ]}
+                          >
+                            {review.userName || "Khách hàng"}
+                          </Text>
+                          <View style={styles.reviewStars}>
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Ionicons
+                                key={star}
+                                name={
+                                  star <= review.rating
+                                    ? "star"
+                                    : "star-outline"
+                                }
+                                size={14}
+                                color="#FFD700"
+                              />
+                            ))}
+                          </View>
+                        </View>
+                      </View>
+                      <Text
+                        style={[
+                          styles.reviewDate,
+                          { color: theme.text + "60" },
+                        ]}
+                      >
+                        {review.createdAt?.toDate
+                          ? review.createdAt
+                              .toDate()
+                              .toLocaleDateString("vi-VN")
+                          : ""}
+                      </Text>
+                    </View>
+                    <Text
+                      style={[
+                        styles.reviewComment,
+                        { color: theme.text + "80" },
+                      ]}
+                    >
+                      {review.comment}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
         </ScrollView>
         {/* Bottom Bar */}
@@ -489,5 +686,99 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: "bold",
     letterSpacing: 0.5,
+  },
+
+  // Reviews styles
+  reviewsCard: {
+    borderRadius: 24,
+    padding: 24,
+    marginHorizontal: 20,
+    marginTop: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 8,
+    borderWidth: 1,
+  },
+  reviewsHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  ratingBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  ratingText: {
+    fontSize: 15,
+    fontWeight: "600",
+    marginLeft: 4,
+  },
+  noReviewsContainer: {
+    alignItems: "center",
+    paddingVertical: 30,
+  },
+  noReviewsText: {
+    fontSize: 16,
+    marginTop: 12,
+    fontWeight: "600",
+  },
+  noReviewsSubtext: {
+    fontSize: 14,
+    marginTop: 4,
+  },
+  reviewsList: {
+    marginTop: 8,
+  },
+  reviewItem: {
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  reviewHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 8,
+  },
+  reviewUserInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  avatarCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
+  },
+  avatarText: {
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  reviewUserDetails: {
+    flex: 1,
+  },
+  reviewUserName: {
+    fontSize: 15,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  reviewStars: {
+    flexDirection: "row",
+    gap: 2,
+  },
+  reviewDate: {
+    fontSize: 12,
+    marginLeft: 8,
+  },
+  reviewComment: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginLeft: 50,
   },
 });

@@ -18,6 +18,7 @@ import AdminSettingsScreen from "../screens/admin/AdminSettingsScreen";
 import AdminHelpScreen from "../screens/admin/AdminHelpScreen";
 import ChatBotScreen from "../screens/ChatBotScreen";
 import SettingsScreen from "../screens/SettingsScreen";
+import ReviewScreen from "../screens/ReviewScreen";
 
 const Stack = createStackNavigator();
 
@@ -51,7 +52,7 @@ export default function AppNavigator() {
   const MainComponent = userRole === "admin" ? AdminTabNavigator : TabNavigator;
 
   return (
-    <Stack.Navigator id={"rootStack"} screenOptions={{ headerShown: false }}>
+    <Stack.Navigator id={undefined} screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MainTabs" component={MainComponent} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="SignUp" component={SignUpScreen} />
@@ -106,6 +107,13 @@ export default function AppNavigator() {
         name="OrderDetail"
         component={OrderDetailScreen}
         options={{ headerShown: false, title: "Chi tiết đơn hàng" }}
+      />
+
+      {/* Màn hình đánh giá sản phẩm */}
+      <Stack.Screen
+        name="Review"
+        component={ReviewScreen}
+        options={{ headerShown: false, title: "Đánh giá sản phẩm" }}
       />
 
       {/* Màn hình user settings */}

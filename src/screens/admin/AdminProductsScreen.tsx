@@ -434,7 +434,7 @@ const AdminProductsScreen = ({ navigation }) => {
             <View style={styles.modalOverlay}>
               <KeyboardAvoidingView
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
-                style={{ flex: 1, width: "100%" }}
+                style={{ width: "100%" }}
               >
                 <View style={styles.modalContent}>
                   {/* HEADER */}
@@ -459,6 +459,7 @@ const AdminProductsScreen = ({ navigation }) => {
                   <ScrollView
                     style={styles.formScrollView}
                     keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
                   >
                     <View style={styles.formContainer}>
                       {/* Tên sản phẩm */}
@@ -798,83 +799,134 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: "90%",
-    overflow: "hidden",
+    height: "90%",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 5,
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "#EEE",
-    backgroundColor: "#FFF",
+    borderBottomColor: "#E0E0E0",
+    backgroundColor: "#F8F9FA",
   },
-  modalTitle: { fontSize: 20, fontWeight: "bold", color: "#333" },
-  closeButton: { padding: 4 },
+  modalTitle: { fontSize: 17, fontWeight: "bold", color: "#333", flex: 1 },
+  closeButton: {
+    padding: 6,
+    backgroundColor: "#F0F0F0",
+    borderRadius: 20,
+  },
 
   /* FORM */
-  formScrollView: { maxHeight: "65%" },
-  formContainer: { padding: 16 },
+  formScrollView: {
+    maxHeight: "75%",
+  },
+  formContainer: {
+    padding: 16,
+    paddingBottom: 20,
+  },
   label: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "600",
-    color: "#333",
-    marginBottom: 8,
-    marginTop: 12,
+    color: "#555",
+    marginBottom: 6,
+    marginTop: 8,
   },
   input: {
-    borderWidth: 2,
-    borderColor: "#E0E0E0",
-    borderRadius: 10,
-    padding: 14,
-    fontSize: 15,
+    borderWidth: 1.5,
+    borderColor: "#DDD",
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 14,
     backgroundColor: "#FAFAFA",
     color: "#333",
   },
-  textArea: { height: 90, textAlignVertical: "top" },
+  textArea: {
+    height: 80,
+    textAlignVertical: "top",
+    paddingTop: 12,
+  },
 
   /* CATEGORY */
-  categoryPicker: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  categoryOption: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: "#F0F0F0",
-    borderWidth: 2,
-    borderColor: "#E0E0E0",
+  categoryPicker: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 4,
   },
-  categoryOptionActive: { backgroundColor: "#FF6B6B", borderColor: "#FF6B6B" },
-  categoryOptionText: { fontSize: 14, color: "#666" },
-  categoryOptionTextActive: { color: "#FFF", fontWeight: "600" },
+  categoryOption: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
+    backgroundColor: "#F5F5F5",
+    borderWidth: 1.5,
+    borderColor: "#DDD",
+  },
+  categoryOptionActive: {
+    backgroundColor: "#FF6B6B",
+    borderColor: "#FF6B6B",
+    transform: [{ scale: 1.02 }],
+  },
+  categoryOptionText: { fontSize: 13, color: "#666", fontWeight: "500" },
+  categoryOptionTextActive: { color: "#FFF", fontWeight: "700" },
 
   /* IMAGE PREVIEW */
-  imagePreviewContainer: { marginTop: 12, alignItems: "center" },
-  imagePreviewLabel: { fontSize: 12, color: "#666", marginBottom: 8 },
-  imagePreview: {
-    width: 120,
-    height: 120,
+  imagePreviewContainer: {
+    marginTop: 12,
+    alignItems: "center",
+    backgroundColor: "#F8F9FA",
+    padding: 12,
     borderRadius: 8,
-    backgroundColor: "#F0F0F0",
+  },
+  imagePreviewLabel: {
+    fontSize: 12,
+    color: "#666",
+    marginBottom: 8,
+    fontWeight: "500",
+  },
+  imagePreview: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+    backgroundColor: "#E0E0E0",
+    borderWidth: 1,
+    borderColor: "#CCC",
   },
 
   /* STOCK */
-  stockInputContainer: { flexDirection: "row", alignItems: "center", gap: 12 },
+  stockInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 4,
+  },
   stockButton: {
     backgroundColor: "#FF6B6B",
-    width: 50,
-    height: 50,
-    borderRadius: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
+    shadowColor: "#FF6B6B",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   stockInput: {
     flex: 1,
-    borderWidth: 2,
-    borderColor: "#E0E0E0",
-    borderRadius: 10,
-    padding: 14,
-    fontSize: 18,
+    borderWidth: 1.5,
+    borderColor: "#DDD",
+    borderRadius: 8,
+    paddingVertical: 10,
+    fontSize: 16,
     fontWeight: "bold",
     textAlign: "center",
     backgroundColor: "#FAFAFA",
@@ -884,17 +936,32 @@ const styles = StyleSheet.create({
   /* ACTIONS */
   modalActions: {
     flexDirection: "row",
-    gap: 12,
-    padding: 16,
+    gap: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderTopWidth: 1,
-    borderTopColor: "#EEE",
-    backgroundColor: "#FFF",
+    borderTopColor: "#E0E0E0",
+    backgroundColor: "#F8F9FA",
   },
-  modalButton: { flex: 1, padding: 16, borderRadius: 10, alignItems: "center" },
-  cancelButton: { backgroundColor: "#F0F0F0" },
-  saveButton: { backgroundColor: "#FF6B6B" },
-  cancelButtonText: { fontSize: 16, fontWeight: "600", color: "#666" },
-  saveButtonText: { fontSize: 16, fontWeight: "600", color: "#FFF" },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  cancelButton: { backgroundColor: "#E0E0E0" },
+  saveButton: {
+    backgroundColor: "#FF6B6B",
+    shadowColor: "#FF6B6B",
+    shadowOpacity: 0.3,
+  },
+  cancelButtonText: { fontSize: 15, fontWeight: "600", color: "#555" },
+  saveButtonText: { fontSize: 15, fontWeight: "700", color: "#FFF" },
 });
 
 export default AdminProductsScreen;
